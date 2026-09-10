@@ -711,8 +711,9 @@ function renderDownloadPackage(p){
            :'<button class="tbtn danger" onclick="retryDownloadJD(\''+id+'\',event)">'+icon('rotate')+'Wiederholen</button>')
       +'</div>':'';
   const fileBlock=filesOpen?filesBlock(p.uuid,gdl?'gdl':'dl'):'';
+  const sig=[p.name, cat, p.is_error?'err':'', p.source||''].join('|');
 
-  return '<div class="pkg '+(open?'is-open':'')+'" data-gdl="'+(gdl?1:0)+'" data-cat="'+esc(cat)+'">'
+  return '<div class="pkg '+(open?'is-open':'')+'" data-key="'+esc(p.uuid)+'" data-sig="'+esc(sig)+'" data-gdl="'+(gdl?1:0)+'" data-cat="'+esc(cat)+'">'
     +'<div class="pkg-head" onclick="togglePackageActions(\''+id+'\',event)">'
     +'<div class="pkg-main">'
     +'<div class="pkg-title"><span class="pkg-name" title="'+esc(p.name)+'">'+esc(p.name)+'</span>'+catChip(p)+'</div>'
@@ -769,6 +770,28 @@ function emptyDownloads(){
   if(State.mode==='all')m='Keine Pakete gefunden';
   if(State.only24h)m='Keine Pakete der letzten 24h';
   return emptyBox(m);
+}
+
+/* ---------- In-place Live-Updates (kein Flickern) ---------- */
+function updateLiveRow(row,p){
+  // Fortschrittsbalken
+  const pct=Math.max(0,Math.min(100,p.percent||0));
+  const fill=row.querySelector('.pkg-bar .fill');
+  if(fill)fill.style.width=pct+'%';
+  // Bytes/Metadaten-Fußzeile in-place aktualisieren
+  const feet=row.querySelector('.pkg-feet');
+  if(feet){
+    const pctTxt=Number.isFinite(pct)?(Math.round(pct*10)/10):0;
+    const bytes=''+esc(p.bytes_loaded_formatted)+' <span style="opacity:.6">/ '+esc(p.bytes_total_formatted)+'</span> <span style="opacity:.5">('+pctTxt+'%)</span>';
+    let right='';
+    if(p.speed>0)right+='<span class="spd">'+icon('gauge-high')+esc(p.speed_formatted)+'</span>';
+    if(p.eta>0)right+='<span>ETA '+esc(p.eta_formatted)+'</span>';
+    feet.innerHTML='<span>'+bytes+'</span><span class="r">'+right+'</span>';
+  }
+}
+function updateLiveFiles(row,p){
+  // Dateiliste ist geöffnet: Zähler/Badges fallen unter die Struktur-Signatur,
+  // Datei-Fortschritt re-rendert nur via fetchPackageFiles bei echten Änderungen.
 }
 
 /* ============================================================
@@ -849,17 +872,57 @@ async function pollDownloads(){
     }
 
     const list=$('downloadsList');
-    const html=items.length?items.map(renderDownloadPackage).join(''):emptyDownloads();
-    // Nur neu rendern, wenn sich der Inhalt wirklich ändert (kein Flickern / Scroll-Reset)
-    if(list.innerHTML!==html){
-      const cur=list.scrollTop;
-      list.innerHTML=html;
-      list.scrollTop=cur;
+    // ---- In-place Reconciliation statt komplettem Neu-Render ----
+    const rows=Array.from(list.querySelectorAll('.pkg'));
+    const byKey=new Map(rows.map(r=>[r.getAttribute('data-key'),r]));
+    const seen=new Set();
+    const madeChange=[false];
+
+    function renderPkg(p){
+      madeChange[0]=true;
+      const el=document.createElement('div');
+      el.innerHTML=renderDownloadPackage(p).trim();
+      const node=el.firstChild;
+      if(State.expandedPkg===p.uuid)node.classList.add('is-open');
+      return node;
     }
-    if(State.openDlFiles){
-      const it=items.find(x=>String(x.uuid)===String(State.openDlFiles));
-      const src=(it&&isGdl(it))?'gallery-dl':'downloads';
-      fetchPackageFiles(State.openDlFiles,src);
+
+    for(const p of items){
+      seen.add(String(p.uuid));
+      const key=String(p.uuid);
+      const row=byKey.get(key);
+      if(!row){
+        list.appendChild(renderPkg(p));
+        continue;
+      }
+      // stable Signature: Name + Kategorie + Status-Set entscheiden "Struktur-Aenderung"
+      const sig=[p.name, p.category, p.is_error?'err':'', p.source||''].join('|');
+      const curSig=row.getAttribute('data-sig');
+      const open=State.expandedPkg===p.uuid;
+      const filesOpen=State.openDlFiles===p.uuid;
+      if(sig!==curSig || (open&&!row.classList.contains('is-open')) || (filesOpen&&!row.querySelector('.files'))){
+        // strukturelle Änderung => neu rendern dieser Zeile
+        const curScrollHasFiles=row.querySelector('.files');
+        const nb=renderPkg(p);
+        // Expand/Zustand bewahren
+        if(open)nb.classList.add('is-open');
+        row.parentNode.replaceChild(nb,row);
+      }else{
+        // nur Live-Zahlen in-place aktualisieren
+        updateLiveRow(row,p);
+        if(open && filesOpen){
+          // Dateiliste aktiv offen: Progress der Dateien in place
+          updateLiveFiles(row,p);
+        }
+      }
+    }
+    // entfernte Pakete löschen
+    for(const row of rows){
+      if(!seen.has(row.getAttribute('data-key'))){row.remove();madeChange[0]=true;}
+    }
+    // Leere Liste korrekt anzeigen (auch initial)
+    if(!items.length && list.children.length===0){
+      list.innerHTML=emptyDownloads();
     }
   }catch(e){}
   finally{State.busy.dl=false;setTimeout(pollDownloads,3500);}
@@ -951,9 +1014,14 @@ async function fetchPackageFiles(id,source){
     if(open){
       const el=$('fc_'+id);
       if(el){
-        const top=el.scrollTop;
-        el.innerHTML=(d.files||[]).length?d.files.map(renderFileItem).join(''):'<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien.</div>';
-        el.scrollTop=top;
+        let html=(d.files||[]).length?d.files.map(renderFileItem).join(''):'<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien.</div>';
+        // In-place: nur neu bauen, wenn sich Inhalt wirklich ändert (kein Springen beim Aufklappen)
+        if(el.getAttribute('data-files-sig')!==html){
+          const top=el.scrollTop;
+          el.innerHTML=html;
+          el.setAttribute('data-files-sig',html);
+          el.scrollTop=top;
+        }
       }
     }
   }catch(e){}
