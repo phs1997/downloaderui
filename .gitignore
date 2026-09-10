@@ -25,3 +25,5 @@ Thumbs.db
 # Local working copies (not part of source)
 orig/
 staging/
+# Lokale Sicherungskopien
+backup/

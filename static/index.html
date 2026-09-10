@@ -1,1109 +1,1082 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JDownloader WebUI</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { darkMode: 'class' }
-  </script>
-  <style>
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
-    .scroll-touch { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-  </style>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased overflow-x-hidden">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0c0f14">
+<meta name="apple-mobile-web-app-title" content="JD WebUI">
+<title>JDownloader WebUI · Console</title>
+<style>
+/* ============================================================
+   Ansatz B — "Ops Console" Design-System
+   Handgeschriebenes, schlankes CSS mit CSS-Variablen.
+   Mobile-First (iPhone), keine fetten Karten, kompakte Rows.
+   ============================================================ */
+:root{
+  --bg:#0c0f14;
+  --bg-2:#10141b;
+  --surface:#141922;
+  --surface-2:#1a202b;
+  --line:#232b37;
+  --line-soft:#1c232d;
+  --text:#e6e9ee;
+  --text-dim:#8b93a1;
+  --text-faint:#5b6472;
+  --accent:#7ee081;          /* console-lime */ 
+  --accent-dim:#2d6330;
+  --blue:#5aa2ff;
+  --amber:#f5b84d;
+  --red:#ff6b6b;
+  --cyan:#46c6c2;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"SF Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Segoe UI",Roboto,sans-serif;
+  --radius:10px;
+  --r-sm:7px;
+  --tap:44px;                /* Tangrösse */
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 8px 22px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.45;
+  overflow-x:hidden;
+  overscroll-behavior-y:contain;
+  -webkit-font-smoothing:antialiased;
+  padding-top:var(--safe-top);
+  padding-bottom:var(--safe-bottom);
+}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea{font-family:inherit;color:inherit;border:none;outline:none;background:none}
+input,textarea{font-size:16px} /* 16px verhindert iOS-Zoom beim Fokussieren */
+::placeholder{color:var(--text-faint)}
+.fix{min-width:0}
+.mono{font-family:var(--mono);font-size:12px}
+.small{font-size:12px}
+.ellip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wrap{min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 
-  <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-20">
-    <div class="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2">
-      <div class="flex items-center space-x-2 sm:space-x-3 shrink-0 min-w-0">
-        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white text-xs sm:text-sm shadow-lg shadow-emerald-600/30 shrink-0">JD</div>
-        <div class="min-w-0">
-          <h1 class="font-semibold text-xs sm:text-sm leading-tight truncate">JDownloader</h1>
-          <div id="connectionStatus" class="flex items-center space-x-1.5 text-[11px] sm:text-xs text-slate-400 truncate">
-            <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-500 animate-pulse inline-block shrink-0"></span>
-            <span class="truncate">Connecting…</span>
+/* SVG-Icons */
+svg.ico{flex:none;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+svg.ico.sm{width:13px;height:13px}
+svg.ico.lg{width:20px;height:20px}
+
+/* ---------------- App-Shell ---------------- */
+#app{max-width:640px;margin:0 auto;padding:0 12px 8px}
+@media(min-width:640px){#app{max-width:760px;padding:0 20px 12px}}
+
+/* ================= HEADER (kompakt auf iPhone) ================= */
+header{
+  position:sticky;top:0;z-index:30;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line-soft);
+  margin:0 calc(var(--safe-top)* -1);
+}
+header .inner{
+  max-width:760px;margin:0 auto;padding:8px 12px;
+  display:flex;align-items:center;gap:8px;min-width:0;
+}
+.brand{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.brand .logo{
+  width:30px;height:30px;flex:none;border-radius:7px;
+  background:linear-gradient(135deg,#1a3d20,#0e2213);
+  border:1px solid var(--accent-dim);
+  display:grid;place-items:center;color:var(--accent);
+}
+.brand .name{min-width:0}
+.brand h1{font-size:13px;font-weight:600;letter-spacing:.02em;line-height:1.1}
+.brand .status{
+  display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);
+  font-family:var(--mono);margin-top:1px;min-width:0;
+}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--text-faint)}
+.dot.on{background:var(--accent);box-shadow:0 0 0 0 rgba(126,224,129,.5);animation:pulse 2s infinite}
+.dot.off{background:var(--amber);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(245,184,77,.45)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.hdr-chips{display:flex;align-items:center;gap:6px;flex:none}
+.chip{
+  display:flex;align-items:center;gap:5px;height:30px;padding:0 9px;border-radius:8px;
+  background:var(--surface);border:1px solid var(--line);
+  font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;
+}
+.chip .lbl{color:var(--text-faint)}
+.chip.bar{color:var(--text-dim)}
+.pause-btn{
+  display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:8px;
+  background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:600;
+  color:var(--text);transition:background .15s;
+}
+.pause-btn.highlight{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.pause-btn:active{background:var(--line)}
+
+/* ================= TABS ================= */
+nav.tabs{
+  display:flex;margin:10px 0 4px;border-bottom:1px solid var(--line-soft);
+  background:color-mix(in srgb,var(--bg) 70%,transparent);
+  position:sticky;top:calc(46px + var(--safe-top));z-index:20;
+}
+.tab{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  height:var(--tap);padding:0 6px;font-size:13px;font-weight:600;color:var(--text-dim);
+  border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;min-width:0;
+}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.badge{
+  background:var(--surface-2);border:1px solid var(--line);color:var(--text-dim);
+  font-family:var(--mono);font-size:10px;line-height:1;padding:3px 6px;border-radius:20px;flex:none;
+}
+.tab.active .badge{color:var(--accent);border-color:var(--accent-dim)}
+
+/* ================= PANELS & LISTEN ================= */
+.panel{display:none}
+.panel.on{display:block}
+.list{display:flex;flex-direction:column;gap:8px;padding-bottom:24px}
+
+/* Toolbar oben in jedem Panel */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 4px;min-width:0}
+.toolbar .grow{flex:1;min-width:0}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{
+  height:30px;padding:0 11px;font-size:12px;font-weight:600;color:var(--text-dim);
+  border-right:1px solid var(--line-soft);display:flex;align-items:center;gap:5px;
+}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--surface-2);color:var(--accent)}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;justify-content:center;
+  height:38px;padding:0 12px;border-radius:var(--r-sm);font-size:12px;font-weight:600;
+  background:var(--surface);border:1px solid var(--line);color:var(--text-dim);
+  transition:background .12s,color .12s,border-color .12s;
+}
+.btn:active{background:var(--surface-2)}
+.btn.tint{color:var(--cyan)}
+.btn.ok{background:var(--accent-dim);border-color:var(--accent);color:#d8ffdb}
+.btn.danger{color:var(--red)}
+.btn.mini{height:32px;padding:0 9px;font-size:11px}
+.btn:disabled{opacity:.5}
+.btn svg.ico{width:15px;height:15px}
+
+/* Queue-Zusammenfassung Streifen */
+.confirmband{
+  display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;
+  background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--r-sm);
+  padding:7px 10px;margin-bottom:2px;font-family:var(--mono);font-size:11px;color:var(--text-dim);
+}
+.confirmband b{color:var(--text);font-weight:600}
+.confirmband .q{color:var(--amber)}
+.confirmband .left.ok{color:var(--accent)}
+.confirmband .left.bad{color:var(--red)}
+
+/* Live-Hinweis */
+.live{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:.06em;text-transform:uppercase}
+.live .lt{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.15}}
+
+/* ================= DOWNLOAD-PAKET (kompakte Row, KEINE fette Karte) ================= */
+.dl{
+  background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius);
+  border-left:3px solid var(--line);overflow:hidden;
+}
+.dl[data-cat="running"]{border-left-color:var(--accent)}
+.dl[data-cat="error"]{border-left-color:var(--red)}
+.dl[data-cat="crawling"]{border-left-color:var(--amber)}
+.dl[data-cat="queued"]{border-left-color:var(--blue)}
+.dl.is-open{border-color:var(--line)}
+.dl-head{
+  padding:8px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;
+}
+.dl-main{min-width:0;flex:1}
+.dl-title{display:flex;align-items:center;gap:6px;min-width:0}
+.dl-name{font-size:13px;font-weight:600;color:var(--text);min-width:0}
+/* ellipsis + wrap anbrechender Paketnamen */
+.ellip-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;line-height:1.3}
+.dl-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;min-width:0}
+.meta-chip{
+  display:inline-flex;align-items:center;gap:4px;height:19px;padding:0 6px;border-radius:5px;
+  font-family:var(--mono);font-size:10px;color:var(--text-dim);background:var(--bg-2);border:1px solid var(--line-soft);white-space:nowrap;
+}
+.meta-chip.st{color:var(--text-dim)}
+.meta-chip.dl-badge{color:var(--cyan);border-color:#144a48}
+.meta-chip.priHIGH{color:var(--amber);border-color:#4a3a17}
+.meta-chip.priHIGHEST{color:var(--red);border-color:#4a2020}
+.status-chip{
+  display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:5px;
+  font-size:11px;font-weight:600;white-space:nowrap;flex:none;
+}
+.status-chip.running{background:rgba(126,224,129,.12);color:var(--accent)}
+.status-chip.error{background:rgba(255,107,107,.13);color:var(--red)}
+.status-chip.crawling{background:rgba(245,184,77,.12);color:var(--amber)}
+.status-chip.finished{background:rgba(90,162,255,.14);color:var(--blue)}
+.status-chip.queued{background:var(--bg-2);color:var(--text-dim)}
+.dl-caret{color:var(--text-faint);flex:none;transition:transform .18s;width:16px;height:16px}
+.dl.is-open .dl-caret{transform:rotate(180deg)}
+
+.dl-bar{height:3px;background:var(--bg-2);}
+.dl-bar .fill{height:100%;background:var(--accent);transition:width .4s ease}
+.dl[data-cat="error"] .dl-bar .fill{background:var(--red)}
+.dl[data-cat="finished"] .dl-bar .fill{background:var(--blue)}
+.dl[data-cat="crawling"] .dl-bar .fill{background:var(--amber)}
+.dl-feet{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
+  padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--text-faint);border-top:1px solid var(--line-soft);
+}
+.dl-feet .r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sp{color:var(--accent)}
+
+/* erweiterte Aktionsleiste */
+.actions{
+  border-top:1px solid var(--line-soft);padding:8px;display:flex;flex-wrap:wrap;gap:6px;
+  background:var(--bg-2);
+}
+.actions{animation:fadein .15s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(-2px)}to{opacity:1}}
+
+/* Fehlerstreifen */
+.errstrip{
+  display:flex;align-items:center;gap:7px;padding:7px 10px;border-top:1px solid var(--line-soft);
+  background:rgba(255,107,107,.07);color:var(--red);font-size:12px;
+}
+.errstrip svg.ico{width:14px;height:14px}
+
+/* Dateiliste (eingeklappt unter Paket) */
+.files{border-top:1px solid var(--line-soft);background:var(--bg-2);padding:8px}
+.files-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em}
+.fileitem{padding:7px 8px;border-bottom:1px solid var(--line-soft);min-width:0}
+.fileitem:last-child{border-bottom:none}
+.fileitem .fr{display:flex;align-items:center;gap:8px;min-width:0}
+.fileitem .fn{font-size:12px;color:var(--text);min-width:0}
+.fstatus{font-size:10px;font-family:var(--mono);flex:none;padding:2px 6px;border-radius:4px}
+.fstatus.done{color:var(--blue);background:rgba(90,162,255,.1)}
+.fstatus.run{color:var(--accent);background:rgba(126,224,129,.1)}
+.fstatus.err{color:var(--red);background:rgba(255,107,107,.1)}
+.fstatus.wait{color:var(--text-dim);background:var(--surface-2)}
+.fileitem .fb{height:2px;background:var(--bg);margin-top:6px;border-radius:2px}
+.fileitem .fb .f{height:100%;border-radius:2px;background:var(--accent)}
+.fileitem .fs{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:4px}
+
+/* ================= LINKGRABBER-Paket ================= */
+.lg{background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden}
+.lg[data-gdl="1"]{border-left:3px solid var(--cyan)}
+.lg-top{padding:9px 10px 7px;min-width:0}
+.lg-title{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.lg-name{font-size:13px;font-weight:600;color:var(--text)}
+.lg-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px;font-family:var(--mono);font-size:11px;color:var(--text-dim);min-width:0}
+.crawl{display:inline-flex;align-items:center;gap:5px;color:var(--amber);animation:blink 1.6s infinite}
+.scan{width:11px;height:11px;border:2px solid var(--amber);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lg-path{
+  display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid var(--line-soft);min-width:0;
+  font-family:var(--mono);font-size:11px;color:var(--text-dim);
+}
+.lg-path .p{flex:1;min-width:0}
+.lg-ops{display:flex;flex-wrap:wrap;gap:6px;padding:7px 10px;border-top:1px solid var(--line-soft);align-items:center;min-width:0}
+.offchip{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 10px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--line);font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap}
+.offchip input{width:16px;height:16px;accent-color:var(--amber)}
+
+/* ================= ADD LINKS ================= */
+.addbox{display:flex;flex-direction:column;gap:12px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:5px}
+input.txt,textarea.txt{
+  width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:10px 11px;color:var(--text);font-family:var(--mono);font-size:14px;
+  transition:border-color .12s;
+}
+textarea.txt{resize:vertical;min-height:120px;line-height:1.5}
+input.txt:focus,textarea.txt:focus{border-color:var(--accent-dim)}
+.checkrow{display:flex;flex-wrap:wrap;gap:8px 16px}
+.checkrow label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;height:38px}
+.checkrow input{width:18px;height:18px;accent-color:var(--accent);flex:none}
+.hint{font-size:11px;color:var(--text-faint)}
+.feedback{padding:9px 11px;border-radius:var(--r-sm);font-size:12px;font-weight:500;border:1px solid;display:none}
+.feedback.ok{display:block;color:var(--accent);background:rgba(126,224,129,.08);border-color:var(--accent-dim)}
+.feedback.err{display:block;color:var(--red);background:rgba(255,107,107,.08);border-color:#4a2020}
+
+/* ================= Toast ================= */
+#toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(16px + var(--safe-bottom));z-index:60;
+  padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;
+  background:var(--surface-2);border:1px solid var(--line);box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:92vw;
+}
+#toast.show{opacity:1}
+#toast.ok{border-color:var(--accent-dim);color:var(--accent)}
+#toast.err{border-color:#4a2020;color:var(--red)}
+
+/* ================= Modal (DirPicker) ================= */
+.overlay{
+  position:fixed;inset:0;z-index:50;background:rgba(4,6,9,.78);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  display:none;align-items:flex-end;justify-content:center;
+  padding:calc(var(--safe-top) + 16px) 0 calc(var(--safe-bottom) + 16px);
+}
+.overlay.on{display:flex}
+.modal{
+  width:100%;max-width:480px;max-height:86vh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 14px 14px;
+  padding:16px;box-shadow:var(--shadow);animation:up .18s ease;margin:0 12px;
+}
+@media(min-width:640px){.overlay{align-items:center}.modal{border-radius:14px}}
+@keyframes up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+.modal .sub{font-size:12px;color:var(--text-dim);margin-bottom:12px}
+.pkg-path{font-family:var(--mono);font-size:11px;color:var(--accent);word-break:break-all}
+.mrow{margin-bottom:10px}
+.mbtn{width:100%;justify-content:flex-start}
+.folder-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.folder-chip{
+  height:30px;padding:0 9px;border-radius:6px;background:var(--bg-2);border:1px solid var(--line-soft);
+  font-family:var(--mono);font-size:11px;color:var(--text-dim);display:inline-flex;align-items:center;
+}
+.folder-chip:active{color:var(--accent);border-color:var(--accent-dim)}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+
+@media(min-width:640px){
+  .lg-top{padding:10px 12px 8px}
+  .dl-head{padding:10px 12px}
+  .dl-feet{padding:6px 12px}
+}
+
+/* Scrollbars (Desktop) */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* Fokus sichtbar (Accessibility) */
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent-dim);outline-offset:1px}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- ============ HEADER ============ -->
+  <header>
+    <div class="inner">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        </span>
+        <div class="name">
+          <h1>JDownloader Console</h1>
+          <div class="status">
+            <span id="dot" class="dot"></span>
+            <span id="connText" class="ellip">Verbinde…</span>
           </div>
         </div>
       </div>
-
-      <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-        <!-- Storage display (MergerFS / NAS) -->
-        <div id="diskBadge" class="hidden flex items-center space-x-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] sm:text-xs font-mono text-slate-300" title="Available storage space">
-          <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
-          <span class="whitespace-nowrap"><strong id="diskFreeText" class="text-emerald-400">--</strong></span>
-        </div>
-
-        <!-- Download Speed -->
-        <div id="speedBadge" class="hidden flex items-center space-x-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] sm:text-xs font-mono text-emerald-400">
-          <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-          <span id="speedText" class="whitespace-nowrap">0 B/s</span>
-        </div>
-
-        <button onclick="togglePause()" class="px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition flex items-center space-x-1 shrink-0">
-          <span id="pauseIcon">⏸</span><span id="pauseText" class="hidden sm:inline">Pause</span>
+      <div class="hdr-chips">
+        <span id="diskChip" class="chip" style="display:none" title="Freier Speicher">
+          <svg class="ico sm" viewBox="0 0 24 24"><path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+          <span id="diskFree">--</span>
+        </span>
+        <span id="speedChip" class="chip bar" style="display:none">
+          <svg class="ico sm" viewBox="0 0 24 24"><path d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+          <span id="speedText">0 B/s</span>
+        </span>
+        <button id="pauseBtn" class="pause-btn" onclick="togglePause()" aria-label="Pause / Resume">
+          <svg class="ico sm" id="pauseIcon" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
+          <span id="pauseLbl" class="ellip">Pause</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Global Action Notification Toast -->
-  <div id="actionToast" class="fixed top-16 right-4 z-50 hidden max-w-sm p-3 rounded-xl shadow-2xl text-xs font-medium transition-all"></div>
+  <!-- ============ TABS ============ -->
+  <nav class="tabs" role="tablist">
+    <button id="tabDownloads" class="tab active" role="tab" onclick="switchTab('downloads')">
+      <svg class="ico sm" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      <span class="ellip">Downloads</span>
+      <span id="dlBadge" class="badge">0</span>
+    </button>
+    <button id="tabLinkgrabber" class="tab" role="tab" onclick="switchTab('linkgrabber')">
+      <svg class="ico sm" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      <span class="ellip">Grabber</span>
+      <span id="lgBadge" class="badge">0</span>
+    </button>
+    <button id="tabAdd" class="tab" role="tab" onclick="switchTab('add')">
+      <svg class="ico sm" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>
+      <span class="ellip">Add</span>
+    </button>
+  </nav>
 
-  <!-- Download Path Edit Modal (Independent of polling re-renders) -->
-  <div id="dirModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 animate-fadeIn">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-        <div class="flex items-center space-x-2">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-          <h3 class="font-semibold text-sm text-slate-100">Set Download Path</h3>
-        </div>
-        <button onclick="closeDirModal()" class="text-slate-400 hover:text-slate-200 text-lg leading-none p-1">✕</button>
+  <!-- ============ TAB: DOWNLOADS ============ -->
+  <section id="panelDownloads" class="panel on">
+    <div class="toolbar">
+      <div class="seg" role="tablist">
+        <button id="modeActive" class="on" onclick="setMode('active')">Aktiv</button>
+        <button id="modeAll" onclick="setMode('all')">Alle</button>
+      </div>
+      <button id="btn24h" class="btn" onclick="toggle24h()" title="Nur letzte 24 Stunden">
+        <span id="dot24" class="dot" style="background:var(--text-faint)"></span>
+        24h
+      </button>
+      <div class="grow"></div>
+      <button class="btn tint" onclick="filterVideosInQueue(null,'downloads')" title="Nicht-Video-Dateien aus der gesamten Queue entfernen">
+        <svg class="ico sm" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M10 9.5l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
+        Videos only
+      </button>
+      <span class="live"><span class="lt"></span>Live</span>
+    </div>
+
+    <div class="confirmband" id="queueBand" style="display:none">
+      <span>Queue: <b class="q" id="qRemain">--</b></span>
+      <span>Danach frei: <b id="qAfter" class="left ok">--</b></span>
+    </div>
+
+    <div id="downloadsList" class="list"></div>
+  </section>
+
+  <!-- ============ TAB: LINKGRABBER ============ -->
+  <section id="panelLinkgrabber" class="panel">
+    <div class="toolbar">
+      <div class="grow"></div>
+      <button class="btn tint" onclick="filterVideosInQueue(null,'linkgrabber')" title="Alle Nicht-Video-Dateien aus allen Paketen entfernen">
+        <svg class="ico sm" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M10 9.5l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
+        Videos only
+      </button>
+      <button class="btn ok" onclick="downloadAllLinkgrabber()">
+        <svg class="ico sm" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Download All
+      </button>
+    </div>
+    <div id="linkgrabberList" class="list"></div>
+  </section>
+
+  <!-- ============ TAB: ADD LINKS ============ -->
+  <section id="panelAdd" class="panel">
+    <div class="addbox">
+      <div>
+        <p style="font-size:13px;font-weight:700;margin-bottom:2px">Neue Links</p>
+        <p class="hint">Links einfügen – werden im Grabber gesammelt und einzeln oder gemeinsam gestartet.</p>
+      </div>
+
+      <div class="field">
+        <label for="linksInput">Links</label>
+        <textarea id="linksInput" class="txt" rows="5" placeholder="Link pro Zeile oder durch Leerzeichen getrennt…"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="addDestinationFolder" style="display:flex;justify-content:space-between;align-items:center">
+          Zielordner (optional)
+          <button type="button" class="btn mini" onclick="promptCreateFolder('addDestinationFolder')">
+            <svg class="ico sm" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>
+            New Folder
+          </button>
+        </label>
+        <input id="addDestinationFolder" class="txt" list="folderSuggestions" placeholder="/output oder Ordnername wie Movies…">
+        <datalist id="folderSuggestions"></datalist>
+        <p class="hint" style="margin-top:4px">Leer = JDownloader-Standard. Bestehenden Ordner wählen oder neu anlegen.</p>
+      </div>
+
+      <div class="checkrow">
+        <label><input type="checkbox" id="chkVideosOnly"> Videos only (Bilder &amp; Text ignorieren)</label>
+        <label><input type="checkbox" id="chkAutostart"> Direkt in Downloadliste &amp; starten</label>
       </div>
 
       <div>
-        <p class="text-xs text-slate-400 mb-1">Package: <span id="dirModalPackageName" class="text-slate-200 font-medium"></span></p>
-        <div class="flex items-center justify-between mb-1.5">
-          <p class="text-[11px] text-slate-500">Choose an existing folder in storage (`/output`) or enter a new folder name.</p>
-          <button type="button" onclick="promptCreateFolder('dirModalInput')"
-            class="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 transition px-2 py-0.5 rounded bg-slate-800 border border-slate-700 shrink-0 ml-2">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            <span>New Folder</span>
-          </button>
-        </div>
-        
-        <input type="text" id="dirModalInput" list="folderSuggestions"
-          placeholder="/output or folder name…"
-          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+        <button class="btn ok" style="height:44px;padding:0 18px;font-size:13px" onclick="submitLinks()">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>
+          Senden
+        </button>
+        <div id="addFeedback" class="feedback" style="margin-top:10px"></div>
       </div>
+    </div>
+  </section>
 
-      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-        <button onclick="closeDirModal()"
-          class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
-          Cancel
-        </button>
-        <button onclick="saveDirModal()"
-          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-medium shadow-md shadow-emerald-600/20 transition">
-          Save Path
-        </button>
+  <!-- ============ FOOTER ============ -->
+  <p style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-faint);padding:14px 0 4px">
+    JDownloader WebUI · Console</p>
+</div>
+
+<!-- ============ MODAL: Zielordner ============ -->
+<div id="dirOverlay" class="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Zielordner festlegen">
+    <h3>
+      <svg class="ico" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/></svg>
+      Zielordner festlegen
+    </h3>
+    <div class="sub">
+      Paket: <span id="dirPkg" class="ellip" style="display:inline-block;max-width:100%"></span><br>
+      Aktuell: <span id="dirCur" class="pkg-path"></span>
+    </div>
+    <div class="req">
+      <div class="field mrow">
+        <label for="dirInput">Pfad oder Ordnername</label>
+        <input id="dirInput" class="txt" list="folderSuggestions" placeholder="/output oder Ordnername…">
       </div>
+      <div class="mrow">
+        <div class="folder-chips" id="dirFolderChips"></div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeDirModal()">Abbrechen</button>
+      <button class="btn ok" onclick="saveDirModal()">Speichern</button>
     </div>
   </div>
+</div>
 
-  <!-- Main Container -->
-  <main class="max-w-4xl w-full mx-auto px-4 py-5 flex-1 flex flex-col space-y-4 overflow-x-hidden">
+<div id="toast"></div>
 
-    <!-- Tab Navigation -->
-    <div class="flex border-b border-slate-800 w-full">
-      <button id="tabBtnDownloads" onclick="switchTab('downloads')"
-        class="flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-emerald-500 text-emerald-400 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap">
-        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        <span>Downloads</span>
-        <span id="downloadsCountBadge" class="px-1.5 py-0.2 rounded-full text-[10px] sm:text-[11px] bg-slate-800 text-slate-400 font-mono">0</span>
-      </button>
+<script>
+"use strict";
+/* ============================================================
+   STATE
+   ============================================================ */
+const State = {
+  isPaused:false,
+  only24h:false,
+  mode:'active',
+  tab:'downloads',
+  expandedPkg:null,          // aufklappbare Aktionsleiste (Downloads)
+  openDlFiles:null,          // offene Dateiliste Downloads
+  openLgFiles:null,          // offene Dateiliste Linkgrabber
+  dirTarget:null,            // Paket-uuid für DirModal
+  folders:[],
+  filesCache:{},
+  busy:{status:false,dl:false,lg:false},
+};
 
-      <button id="tabBtnLinkgrabber" onclick="switchTab('linkgrabber')"
-        class="flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap">
-        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-        <span>Linkgrabber</span>
-        <span id="linkgrabberCountBadge" class="px-1.5 py-0.2 rounded-full text-[10px] sm:text-[11px] bg-slate-800 text-slate-400 font-mono">0</span>
-      </button>
+/* ============================================================
+   UTILS
+   ============================================================ */
+function esc(s){if(s===null||s===undefined)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function $(id){return document.getElementById(id);}
+async function post(path,body){
+  const res=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  let d=null;try{d=await res.json();}catch(e){}
+  return {ok:res.ok,d:d||{}};
+}
+function toast(text,isErr){
+  const t=$('toast');t.textContent=text;
+  t.className='show '+(isErr?'err':'ok');
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200);
+}
+function openConfirm(msg){ // iOS-sichere Bestätigung
+  if(window.confirm)return window.confirm(msg);
+  return true;
+}
 
-      <button id="tabBtnAdd" onclick="switchTab('add')"
-        class="flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap">
-        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        <span>Add Links</span>
-      </button>
+/* ============================================================
+   ICONS — einheitliches Inline-SVG-System (keine Emojis)
+   ============================================================ */
+const ICS={
+  video:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M10 9.5l5 3-5 3z" fill="currentColor" stroke="none"/>',
+  film:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 10h4M3 14h4M17 10h4M17 14h4"/>',
+  folder:'<path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/>',
+  trash:'<path d="M19 7l-.9 12.1A2 2 0 0 1 16.1 21H7.9a2 2 0 0 1-2-1.9L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>',
+  files:'<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.6a1 1 0 0 1 .7.3l5.4 5.4a1 1 0 0 1 .3.7V19a2 2 0 0 1-2 2z"/>',
+  bolt:'<path d="M13 10V3L4 14h7v7l9-11h-7z"/>',
+  up:'<path d="M12 5v14M5 12l7-7 7 7"/>',
+  down:'<path d="M12 19V5M5 12l7 7 7-7"/>',
+  scan:'<path d="M4 4v5M4 20v-5M9 4h2M13 4h2M20 4v5M20 20v-5M9 20h2M13 20h2"/>',
+  refresh:'<path d="M4 4v5h.6M20 20v-5h-.6M4 9h4M20 15h-4"/><path d="M4.6 9A8 8 0 0 1 19 6.5M20 15a8 8 0 0 1-14 2.5"/>',
+  err:'<path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
+  cam:'<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/>',
+  gdl:'<path d="M12 21C7 21 3 16.6 3 12s4-9 9-9 9 4.4 9 9-4 9-9 9z"/><circle cx="12" cy="12" r="4"/>',
+};
+function I(name,cls){
+  return '<svg class="ico'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">'+(ICS[name]||'')+'</svg>';
+}
+
+/* ============================================================
+   RENDER — DOWNLOADS
+   ============================================================ */
+function catChip(p){
+  const c=p.category||'queued';
+  let label=c.charAt(0).toUpperCase()+c.slice(1);
+  if(c==='crawling')label='Scannt';
+  if(c==='running')label='Läuft';
+  if(c==='queued')label='Wartet';
+  if(c==='finished')label='Fertig';
+  if(c==='error')label='Fehler';
+  return `<span class="status-chip ${esc(c)}">${label}</span>`;
+}
+function prioChip(p){
+  if(!p.priority||p.priority==='DEFAULT')return'';
+  return `<span class="meta-chip pri${esc(p.priority)}">${p.priority==='HIGHEST'?I('bolt','sm'):''}${esc(p.priority)}</span>`;
+}
+function gdlChip(p){
+  if(p.source!=='gallery-dl')return'';
+  return `<span class="meta-chip dl-badge" title="Downloader: gallery-dl">${I('gdl','sm')}gallery-dl</span>`;
+}
+function dlMetaChips(p){
+  const t=p.files_total||0, d=p.files_done||0, e=p.files_error||0;
+  let h='';
+  h+=gdlChip(p)+prioChip(p);
+  if(t>1)h+=`<span class="meta-chip">${d}/${t} Datei${t>1?'en':''}</span>`;
+  if(e>0)h+=`<span class="meta-chip" style="color:var(--red);border-color:#4a2020">${e} ✕</span>`;
+  return h;
+}
+function renderFileItem(f){
+  let st='wait',lbl=esc(f.status||'Wartet');
+  if(f.finished){st='done';lbl='Fertig';}
+  else if(f.running){st='run';lbl='Lädt';}
+  else if(f.status&&f.status.toLowerCase().includes('error')){st='err';lbl='Fehler';}
+  const bar=f.running||f.finished?`<div class="fb"><div class="f" style="width:${Math.min(100,f.percent)}%"></div></div>`:'';
+  const speed=f.speed_formatted?`<span style="color:var(--accent)">${esc(f.speed_formatted)}</span>`:'';
+  const eta=f.eta_formatted?`<span>ETA ${esc(f.eta_formatted)}</span>`:'';
+  return `<div class="fileitem">
+    <div class="fr">
+      <span class="fn ellip" title="${esc(f.name)}">${esc(f.name)}</span>
+      <span class="fstatus ${st}">${lbl}</span>
     </div>
+    ${bar}
+    <div class="fs"><span>${esc(f.bytes_loaded_formatted)} / ${esc(f.bytes_total_formatted)} (${f.percent}%)</span><span class="elip">${speed}${eta}</span></div>
+  </div>`;
+}
+function filesBlock(pkgId,source){
+  const files=State.filesCache[pkgId];
+  const src=(source==='lg')?'linkgrabber':(source==='gdl'?'gallery-dl':'downloads');
+  let body;
+  if(!files){body=`<div style="padding:14px;text-align:center;font-size:12px;color:var(--text-faint)">Lade Dateiliste…</div>`;}
+  else if(!files.length){body=`<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien gefunden.</div>`;}
+  else{body=files.map(renderFileItem).join('');}
+  const label = source==='lg' ? 'Gefundene Dateien' : 'Enthaltene Dateien';
+  return `<div class="files">
+    <div class="files-h">
+      <span>${label}</span>
+      <button class="btn mini" onclick="fetchPackageFiles('${esc(pkgId)}','${src}')">${I('refresh','sm')}Aktualisieren</button>
+    </div>
+    <div id="fc_${esc(pkgId)}">${body}</div>
+  </div>`;
+}
+function renderDownloadPackage(p){
+  const id=esc(p.uuid);
+  const gdl=p.source==='gallery-dl';
+  const cat=p.category||'queued';
+  const open=State.expandedPkg===p.uuid;
+  const filesOpen=State.openDlFiles===p.uuid;
+  const fileSrc=gdl?'gallery-dl':'downloads';
+  const speed=p.speed>0?`<span class="sp">${esc(p.speed_formatted)}</span>`:'';
+  const eta=p.eta>0?`<span>ETA ${esc(p.eta_formatted)}</span>`:'';
+  const pct=Math.max(0,Math.min(100,p.percent||0));
+  const pctTxt=Number.isFinite(pct)?(Math.round(pct*10)/10):0;
 
-    <!-- TAB 1: DOWNLOADS / HISTORY -->
-    <section id="tabDownloads" class="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-wrap gap-2">
-        <div class="flex items-center space-x-2">
-          <h2 class="font-semibold text-sm">Download Packages</h2>
+  // Bytes-Zeile: bei gallery-dl laufend zusätzlich Datei-Fortschritt
+  let bytesTimezone=`${esc(p.bytes_loaded_formatted)} <span class="muted">/ ${esc(p.bytes_total_formatted)}</span> <span style="color:var(--text-faint)">( ${pctTxt}% )</span>`;
+  if(gdl&&cat==='running'){
+    bytesTimezone=`${esc(p.bytes_loaded_formatted)} / ${esc(p.bytes_total_formatted)} · ${p.files_done||0}/${p.files_total||0} Dateien <span style="color:var(--accent)">(${pctTxt}%)</span>`;
+  }
+
+  let actions='';
+  if(open){
+    let controls='';
+    if(!gdl){
+      controls=`
+        <div class="seg">
+          <button onclick="movePackage('${id}','up',event)" title="Um 1 nach oben">${I('up','sm')}</button>
+          <button onclick="movePackage('${id}','down',event)" title="Um 1 nach unten">${I('down','sm')}</button>
         </div>
-        
-        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
-          <span id="downloadsQueueSummary" class="hidden text-[10px] sm:text-[11px] font-mono px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
-            Queue: <span id="queueBytesText" class="text-amber-400 font-medium">--</span> · Left: <span id="queueAfterText" class="text-emerald-400 font-medium">--</span>
-          </span>
+        <button class="btn" onclick="prioritizePackage('${id}',event)" title="Priorität: Normal → Hoch → Höchste">${I('bolt','sm')}Priorität</button>
+        <button class="btn tint" onclick="filterVideosInQueue('${id}','downloads',event)">${I('video','sm')}Videos only</button>`;
+    }
+    actions=`
+    <div class="actions" onclick="event.stopPropagation()">
+      <button class="btn" onclick="togglePackageFiles('${id}','downloads',event)">${I('files','sm')}
+        ${filesOpen?'Dateien ausblenden':'Dateien anzeigen ('+ (p.files_total||0) +')'}</button>
+      ${controls}
+      <button class="btn danger" onclick="deletePackage('${id}','${gdl?'gallery-dl':'downloads'}',event)">${I('trash','sm')}Löschen</button>
+    </div>`;
+  }
 
-          <div class="flex rounded-lg bg-slate-950 p-0.5 border border-slate-800 text-xs">
-            <button id="btnModeActive" onclick="setMode('active')"
-              class="px-2.5 py-1 rounded-md font-medium transition bg-slate-800 text-slate-200 shadow-sm">
-              Active
-            </button>
-            <button id="btnModeAll" onclick="setMode('all')"
-              class="px-2.5 py-1 rounded-md font-medium transition text-slate-400 hover:text-slate-200">
-              Show all
-            </button>
-          </div>
+  const errStrip=p.is_error?`<div class="errstrip">${I('err')}${esc(p.status)}</div>`:'';
+  const fileBlock=filesOpen?filesBlock(p.uuid,gdl?'gdl':'dl'):'';
 
-          <button onclick="filterVideosInQueue(null, 'downloads', event)" title="Remove JPGs/images/text from active download queue"
-            class="px-2.5 py-1 text-xs font-medium rounded-lg border border-purple-800/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 transition flex items-center gap-1.5 shadow-sm">
-            <span>🎬 Videos only</span>
-          </button>
-
-          <button id="btn24h" onclick="toggle24h()"
-            class="px-2.5 py-1 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5">
-            <span id="dot24h" class="w-2 h-2 rounded-full bg-slate-500"></span>
-            <span>24h</span>
-          </button>
-          
-          <div class="text-xs text-slate-500 flex items-center space-x-1 ml-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-            <span>Live</span>
-          </div>
+  return `<div class="dl ${open?'is-open':''}" data-cat="${esc(cat)}">
+    <div class="dl-head" onclick="togglePackageActions('${id}',event)">
+      <div class="dl-main">
+        <div class="dl-title">
+          <span class="dl-name ellip-2" title="${esc(p.name)}">${esc(p.name)}</span>
+          ${catChip(p)}
         </div>
+        <div class="dl-meta">${dlMetaChips(p)}</div>
       </div>
+      <svg class="ico dl-caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="dl-bar"><div class="fill" style="width:${pct}%"></div></div>
+    <div class="dl-feet">
+      <span class="fix">${bytesTimezone}</span>
+      <span class="r fix">${speed}${eta}</span>
+    </div>
+    ${actions}
+    ${fileBlock}
+    ${errStrip}
+  </div>`;
+}
 
-      <div id="downloadsList" class="overflow-y-auto space-y-2 max-h-[75vh] min-h-[140px] pr-0.5 scroll-touch overscroll-contain pb-6">
-        <div class="h-32 flex flex-col items-center justify-center text-slate-600 text-sm">
-          <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-          <span>No active downloads</span>
-        </div>
+/* ============================================================
+   RENDER — LINKGRABBER
+   ============================================================ */
+function renderLinkgrabberPackage(p){
+  const id=esc(p.uuid);
+  const gdl=p.source==='gallery-dl';
+  const total=p.files_total||1;
+  const savePath=p.save_to||'/output';
+  const filesOpen=State.openLgFiles===p.uuid;
+  const crawl=(gdl&&p.crawling)?`<span class="crawl"><span class="scan"></span>Scannt</span>`:'';
+  const sizeTxt=p.bytes_total_formatted&&p.bytes_total_formatted!=='--'?`Size: ${esc(p.bytes_total_formatted)}`:'';
+
+  const offline=!gdl?`<label class="offchip" title="Auch als offline markierte Links versuchen">
+      <input type="checkbox" id="off_${id}"> Force offline
+    </label>`:'';
+
+  const fileBlock=filesOpen?filesBlock(p.uuid,'lg'):'';
+
+  return `<div class="lg" data-gdl="${gdl?'1':'0'}">
+    <div class="lg-top">
+      <div class="lg-title">
+        <span class="lg-name ellip-2" title="${esc(p.name)}">${esc(p.name)}</span>
+        ${gdl?`<span class="meta-chip dl-badge">${I('gdl','sm')}gallery-dl</span>`:''}
+        ${crawl}
+        <span class="meta-chip">${total} Datei${total>1?'en':''}</span>
       </div>
-    </section>
-
-    <!-- TAB 2: LINKGRABBER -->
-    <section id="tabLinkgrabber" class="hidden flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-wrap gap-2">
-        <div class="flex items-center space-x-2">
-          <h2 class="font-semibold text-sm">Scraped Packages in Linkgrabber</h2>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button onclick="filterVideosInQueue(null, 'linkgrabber', event)"
-            title="Filter all linkgrabber packages: Remove all non-video files"
-            class="px-2.5 py-1.5 rounded-xl border border-purple-800/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 text-xs font-medium shadow-sm transition flex items-center gap-1.5">
-            <span>🎬 Videos only</span>
-          </button>
-          <button onclick="downloadAllLinkgrabber()"
-            class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-medium shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-            <span>Download All</span>
-          </button>
-        </div>
+      <div class="lg-sub">
+        ${sizeTxt?`<span class="fix">${sizeTxt}</span>`:''}
+        <span class="fix ${p.crawling?'':''}" style="${p.crawling?'color:var(--amber)':''}">${esc(p.status)}</span>
       </div>
+    </div>
+    <div class="lg-path">
+      ${I('folder','sm')}
+      <span class="p ellip" title="${esc(savePath)}">${esc(savePath)}</span>
+      <button class="btn mini" onclick="openDirModal('${id}','${esc(p.name)}','${esc(savePath)}')">${I('film','sm')}Ändern</button>
+    </div>
+    <div class="lg-ops">
+      ${offline}
+      <button class="btn tint" onclick="filterVideosInQueue('${id}','linkgrabber',event)">${I('video','sm')}Videos only</button>
+      <button class="btn ok" onclick="downloadSingleLinkgrabber('${id}')">${I('down','sm')}Download</button>
+      <button class="btn" onclick="togglePackageFiles('${id}','linkgrabber',event)">${I('files','sm')}Dateien (${total})</button>
+      <button class="btn danger" onclick="deletePackage('${id}','linkgrabber',event)">${I('trash','sm')}</button>
+    </div>
+    ${fileBlock}
+  </div>`;
+}
 
-      <div id="linkgrabberActionMsg" class="hidden mb-3 p-2.5 rounded-lg text-xs font-medium"></div>
+/* ============================================================
+   RENDER — EMPTY STATES
+   ============================================================ */
+function emptyDownloads(){
+  let m='Keine aktiven Downloads';
+  if(State.mode==='all')m='Keine Pakete gefunden';
+  if(State.only24h)m='Keine Pakete der letzten 24h';
+  return emptyBox(m);
+}
+function emptyBox(msg){
+  return `<div style="padding:48px 12px;text-align:center;color:var(--text-faint)" class="small">
+    ${I('err','lg')}<div style="margin-top:8px">${esc(msg)}</div></div>`;
+}
 
-      <div id="linkgrabberList" class="overflow-y-auto space-y-2 max-h-[75vh] min-h-[140px] pr-0.5 scroll-touch overscroll-contain pb-6">
-        <div class="h-32 flex flex-col items-center justify-center text-slate-600 text-sm">
-          <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-          <span>Linkgrabber is empty</span>
-        </div>
-      </div>
-    </section>
+/* ============================================================
+   POLLING — idempotent (keine parallelen Requests)
+   ============================================================ */
+async function pollStatus(){
+  if(State.busy.status)return;
+  State.busy.status=true;
+  try{
+    const d=await fetch('/api/status').then(r=>r.json());
+    const dot=$('dot'),ct=$('connText');
+    if(d&&d.connected){
+      dot.className='dot on';ct.textContent=d.state||'Verbunden';ct.style.color='var(--accent)';
+      $('speedChip').style.display='';
+      $('speedText').textContent=d.speed_formatted||'0 B/s';
+      if(d.disk){
+        $('diskChip').style.display='';
+        $('diskFree').textContent=d.disk.free_formatted;
+        $('diskChip').title=`Frei: ${d.disk.free_formatted} | Gesamt: ${d.disk.total_formatted||''} | Belegt: ${d.disk.used_formatted||''} (${d.disk.percent_used||0}%)`;
+      } else { $('diskChip').style.display='none'; }
+    }else{
+      dot.className='dot off';ct.textContent='Offline';ct.style.color='var(--amber)';
+      $('speedChip').style.display='none';
+      if(d&&d.disk){$('diskChip').style.display='';$('diskFree').textContent=d.disk.free_formatted;}
+      else{$('diskChip').style.display='none';}
+      // Pause-Button zurücksetzen, da Zustand unbekannt
+      State.isPaused=false;renderPause();
+    }
+  }catch(e){}
+  finally{State.busy.status=false;setTimeout(pollStatus,4000);}
+}
 
-    <!-- TAB 3: ADD LINKS -->
-    <section id="tabAdd" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-      <h2 class="font-semibold text-sm mb-2 text-slate-200">Add New Download Links</h2>
-      <p class="text-xs text-slate-400 mb-3">Paste links here – they will be collected in the Linkgrabber and can be started individually or together.</p>
+async function pollDownloads(){
+  if(State.busy.dl)return;
+  State.busy.dl=true;
+  try{
+    let url='/api/downloads?mode='+State.mode;
+    if(State.only24h)url+='&hours=24';
+    const res=await fetch(url);
+    if(res.ok){
+      const d=await res.json();
+      const items=d.items||[];
+      $('dlBadge').textContent=items.length;
 
-      <textarea id="linksInput" rows="5"
-        placeholder="Paste links here – one link per line or separated by spaces…"
-        class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-600 font-mono transition resize-y"
-      ></textarea>
-      
-      <div class="mt-3">
-        <div class="flex items-center justify-between mb-1">
-          <label class="block text-xs font-medium text-slate-400">Destination folder (optional):</label>
-          <button type="button" onclick="promptCreateFolder('addDestinationFolder')"
-            class="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 transition px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            <span>New Folder</span>
-          </button>
-        </div>
-        <div class="relative">
-          <input type="text" id="addDestinationFolder" list="folderSuggestions"
-            placeholder="/output or folder name like Movies, Series/Season 1…"
-            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-600 transition">
-          <datalist id="folderSuggestions"></datalist>
-        </div>
-        <p class="text-[11px] text-slate-500 mt-1">Leave blank for JDownloader default (`/output/&lt;PackageName&gt;`). You can choose an existing folder or create a new one.</p>
-      </div>
+      // Queue-Infos
+      const qb=$('queueBand');
+      if(d.queue_info&&d.queue_info.queue_remaining_bytes>0){
+        qb.style.display='';
+        $('qRemain').textContent=d.queue_info.queue_remaining_formatted;
+        const af=$('qAfter');
+        af.textContent=d.queue_info.after_download_free_formatted;
+        af.className='left '+(d.queue_info.sufficient_space?'ok':'bad');
+      }else{qb.style.display='none';}
 
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-4">
-          <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none">
-            <input type="checkbox" id="chkVideosOnly" class="rounded border-slate-700 bg-slate-800 text-purple-500 h-4 w-4">
-            <span class="text-purple-300 font-medium">🎬 Videos only (ignore images & text)</span>
-          </label>
-          <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none">
-            <input type="checkbox" id="chkAutostart" class="rounded border-slate-700 bg-slate-800 text-emerald-500 h-4 w-4">
-            <span>Add directly to download list & start</span>
-          </label>
-        </div>
-        <button onclick="submitLinks()"
-          class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-sm font-medium shadow-lg shadow-emerald-600/20 transition flex items-center space-x-1.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          <span>Send to Linkgrabber</span>
-        </button>
-      </div>
-      <div id="submitMessage" class="hidden mt-3 p-2.5 rounded-lg text-xs font-medium"></div>
-    </section>
-  </main>
-
-  <footer class="py-6 pb-12 text-center text-xs text-slate-700">JDownloader WebUI Lite · 100% Local</footer>
-
-  <script>
-    let isPaused = false;
-    let only24h = false;
-    let currentMode = 'active';
-    let currentTab = 'downloads';
-    let expandedPackageId = null;
-    let openedDownloadsPackageId = null;
-    let openedLinkgrabberPackageId = null;
-    let editingDirectoryPackageId = null;
-    let availableFolders = [];
-    let packageFilesCache = {};
-    let isFetchingFiles = false;
-    let isFetchingDownloads = false;
-    let isFetchingLinkgrabber = false;
-    let isFetchingStatus = false;
-
-    function switchTab(tab) {
-      currentTab = tab;
-      const tabs = ['downloads', 'linkgrabber', 'add'];
-      tabs.forEach(t => {
-        const sec = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
-        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
-        if (t === tab) {
-          sec.classList.remove('hidden');
-          btn.className = "flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-emerald-500 text-emerald-400 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap";
-        } else {
-          sec.classList.add('hidden');
-          btn.className = "flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap";
+      const list=$('downloadsList');
+      if(!items.length){list.innerHTML=emptyDownloads();}
+      else{
+        // Scrollposition & offene Dateiliste erhalten
+        const cur=list.scrollTop;
+        const openEl=State.openDlFiles?$('fc_'+State.openDlFiles):null;
+        const fs=openEl?openEl.scrollTop:0;
+        list.innerHTML=items.map(renderDownloadPackage).join('');
+        list.scrollTop=cur;
+        if(State.openDlFiles){
+          const rest=$('fc_'+State.openDlFiles);
+          if(rest&&fs>0)rest.scrollTop=fs;
+          const it=items.find(x=>String(x.uuid)===String(State.openDlFiles));
+          const src=(it&&it.source)?it.source:'downloads';
+          fetchPackageFiles(State.openDlFiles,src);
         }
-      });
-
-      if (tab === 'downloads') pollDownloads();
-      if (tab === 'linkgrabber') pollLinkgrabber();
-    }
-
-    function setMode(mode) {
-      currentMode = mode;
-      const bActive = document.getElementById('btnModeActive');
-      const bAll = document.getElementById('btnModeAll');
-      if (mode === 'active') {
-        bActive.className = "px-2.5 py-1 rounded-md font-medium transition bg-slate-800 text-slate-200 shadow-sm";
-        bAll.className = "px-2.5 py-1 rounded-md font-medium transition text-slate-400 hover:text-slate-200";
-      } else {
-        bAll.className = "px-2.5 py-1 rounded-md font-medium transition bg-slate-800 text-slate-200 shadow-sm";
-        bActive.className = "px-2.5 py-1 rounded-md font-medium transition text-slate-400 hover:text-slate-200";
-      }
-      pollDownloads();
-    }
-
-    function toggle24h() {
-      only24h = !only24h;
-      const btn = document.getElementById('btn24h');
-      const dot = document.getElementById('dot24h');
-      if (only24h) {
-        btn.classList.remove('bg-slate-800/80', 'text-slate-300', 'border-slate-700');
-        btn.classList.add('bg-emerald-950', 'text-emerald-300', 'border-emerald-700/80');
-        dot.classList.remove('bg-slate-500');
-        dot.classList.add('bg-emerald-400');
-      } else {
-        btn.classList.add('bg-slate-800/80', 'text-slate-300', 'border-slate-700');
-        btn.classList.remove('bg-emerald-950', 'text-emerald-300', 'border-emerald-700/80');
-        dot.classList.add('bg-slate-500');
-        dot.classList.remove('bg-emerald-400');
-      }
-      pollDownloads();
-    }
-
-    function togglePackageActions(pkgId, e) {
-      if (e) e.stopPropagation();
-      expandedPackageId = (expandedPackageId === pkgId) ? null : pkgId;
-      pollDownloads();
-    }
-
-    async function togglePackageFiles(pkgId, source = 'downloads', e) {
-      if (e) e.stopPropagation();
-      if (source === 'downloads') {
-        if (openedDownloadsPackageId === pkgId) {
-          openedDownloadsPackageId = null;
-          pollDownloads();
-          return;
-        }
-        openedDownloadsPackageId = pkgId;
-        pollDownloads();
-        fetchPackageFiles(pkgId, 'downloads');
-      } else {
-        if (openedLinkgrabberPackageId === pkgId) {
-          openedLinkgrabberPackageId = null;
-          pollLinkgrabber();
-          return;
-        }
-        openedLinkgrabberPackageId = pkgId;
-        pollLinkgrabber();
-        fetchPackageFiles(pkgId, 'linkgrabber');
       }
     }
+  }catch(e){}
+  finally{State.busy.dl=false;setTimeout(pollDownloads,3500);}
+}
 
-    async function fetchPackageFiles(pkgId, source = 'downloads') {
-      try {
-        const res = await fetch(`/api/downloads/files?package_uuid=${pkgId}&source=${source}`);
-        if (res.ok) {
-          const d = await res.json();
-          packageFilesCache[pkgId] = d.files || [];
-          const isCurrent = (source === 'downloads' && openedDownloadsPackageId === pkgId) ||
-                            (source === 'linkgrabber' && openedLinkgrabberPackageId === pkgId);
-          if (isCurrent) {
-            renderFilesContainer(pkgId);
-          }
+async function pollLinkgrabber(){
+  if(State.busy.lg)return;
+  State.busy.lg=true;
+  try{
+    const res=await fetch('/api/linkgrabber');
+    if(res.ok){
+      const d=await res.json();
+      const items=d.items||[];
+      $('lgBadge').textContent=items.length;
+      const list=$('linkgrabberList');
+      if(!items.length){list.innerHTML=emptyBox('Grabber ist leer');}
+      else{
+        const cur=list.scrollTop;
+        const openEl=$('fc_'+State.openLgFiles);
+        const fs=openEl?openEl.scrollTop:0;
+        list.innerHTML=items.map(renderLinkgrabberPackage).join('');
+        list.scrollTop=cur;
+        if(State.openLgFiles){
+          const rest=$('fc_'+State.openLgFiles);
+          if(rest&&fs>0)rest.scrollTop=fs;
+          fetchPackageFiles(State.openLgFiles,'linkgrabber');
         }
-      } catch (err) {
-        console.error("Error fetching files:", err);
       }
     }
-
-    function renderFilesHtml(pkgId) {
-      const files = packageFilesCache[pkgId];
-      if (!files) {
-        return `<div class="py-3 text-center text-xs text-slate-500 animate-pulse">Loading file list…</div>`;
-      }
-      if (files.length === 0) {
-        return `<div class="py-2 text-center text-xs text-slate-500">No files found.</div>`;
-      }
-
-      return files.map(f => {
-        let statusBadge = '';
-        if (f.finished) {
-          statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-900/40 text-blue-300 border border-blue-800/40 shrink-0">Finished</span>`;
-        } else if (f.running) {
-          statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 shrink-0 animate-pulse">Downloading</span>`;
-        } else if (f.status && f.status.toLowerCase().includes('error')) {
-          statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-900/60 text-red-300 border border-red-700/50 shrink-0">Error</span>`;
-        } else {
-          statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 shrink-0">${esc(f.status || 'Queued')}</span>`;
-        }
-
-        const fSpeed = f.speed_formatted ? `<span class="text-emerald-400 shrink-0">${esc(f.speed_formatted)}</span>` : '';
-        const fEta = f.eta_formatted ? `<span class="text-slate-500 shrink-0">${esc(f.eta_formatted)}</span>` : '';
-
-        return `
-        <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800 flex flex-col gap-1 text-xs">
-          <div class="flex items-center justify-between gap-2 min-w-0">
-            <span class="font-normal text-slate-200 truncate break-all flex-1 min-w-0" title="${esc(f.name)}">${esc(f.name)}</span>
-            ${statusBadge}
-          </div>
-          <div class="flex items-center justify-between text-[11px] font-mono text-slate-500">
-            <span>${esc(f.bytes_loaded_formatted)} / ${esc(f.bytes_total_formatted)} <span class="text-slate-600">(${f.percent}%)</span></span>
-            <div class="flex items-center gap-2">${fSpeed}${fEta}</div>
-          </div>
-          <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
-            <div class="h-full rounded-full ${f.finished ? 'bg-blue-500' : (f.running ? 'bg-emerald-500' : 'bg-slate-600')} transition-all duration-300" style="width:${Math.min(100, f.percent)}%"></div>
-          </div>
-        </div>`;
-      }).join('');
-    }
-
-    function renderFilesContainer(pkgId) {
-      const container = document.getElementById(`filesContainer_${pkgId}`);
-      if (!container) return;
-      const prevScroll = container.scrollTop;
-      container.innerHTML = renderFilesHtml(pkgId);
-      container.scrollTop = prevScroll;
-      // Also requestAnimationFrame in case layout computation takes a frame
-      requestAnimationFrame(() => {
-        if (container && prevScroll > 0) {
-          container.scrollTop = prevScroll;
-        }
-      });
-    }
-
-    async function prioritizePackage(pkgId, e) {
-      if (e) e.stopPropagation();
-      showToast("Updating priority...", false);
-      try {
-        const res = await fetch('/api/downloads/prioritize', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({package_uuid: pkgId, source: 'downloads'})
-        });
-        const d = await res.json();
-        if (res.ok && d.success) {
-          showToast(`✓ Priority set to ${d.priority}!`, false);
-          pollDownloads();
-        } else {
-          showToast("Error updating priority", true);
-        }
-      } catch(e) { showToast("Network error", true); }
-    }
-
-    async function movePackage(pkgId, direction, e) {
-      if (e) e.stopPropagation();
-      try {
-        const res = await fetch('/api/downloads/move', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({package_uuid: pkgId, direction: direction})
-        });
-        const d = await res.json();
-        if (res.ok && d.success) {
-          showToast(direction === 'up' ? "▲ Moved up" : "▼ Moved down", false);
-          pollDownloads();
-        }
-      } catch(e) { showToast("Network error", true); }
-    }
-
-    async function deletePackage(pkgId, source, e) {
-      if (e) e.stopPropagation();
-      if (!confirm("Are you sure you want to delete this package?")) return;
-      showToast("Deleting package...", false);
-      try {
-        const res = await fetch('/api/downloads/delete', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({package_uuid: pkgId, source: source})
-        });
-        const d = await res.json();
-        if (res.ok && d.success) {
-          showToast("✓ Package deleted", false);
-          expandedPackageId = null;
-          if (source === 'linkgrabber') pollLinkgrabber();
-          else pollDownloads();
-        } else {
-          showToast("Error deleting package", true);
-        }
-      } catch(e) { showToast("Network error", true); }
-    }
-
-    function showToast(text, isErr) {
-      const t = document.getElementById('actionToast');
-      t.innerText = text;
-      t.className = isErr
-        ? 'fixed top-16 right-4 z-50 p-3 rounded-xl shadow-2xl text-xs font-medium bg-red-950 border border-red-800 text-red-200 block'
-        : 'fixed top-16 right-4 z-50 p-3 rounded-xl shadow-2xl text-xs font-medium bg-emerald-950 border border-emerald-800 text-emerald-200 block';
-      setTimeout(() => { t.className = 'hidden'; }, 3500);
-    }
-
-    async function pollStatus() {
-      if (isFetchingStatus) return;
-      isFetchingStatus = true;
-      try {
-        const d = await fetch('/api/status').then(r => r.json());
-        const el = document.getElementById('connectionStatus');
-        const speedBadge = document.getElementById('speedBadge');
-        const diskBadge = document.getElementById('diskBadge');
-
-        if (d && d.connected) {
-          el.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span class="text-emerald-400 font-medium">${esc(d.state)}</span>`;
-          speedBadge.classList.remove('hidden');
-          document.getElementById('speedText').innerText = d.speed_formatted;
-
-          if (d.disk) {
-            diskBadge.classList.remove('hidden');
-            document.getElementById('diskFreeText').innerText = d.disk.free_formatted;
-            diskBadge.title = `Free: ${d.disk.free_formatted} | Total: ${d.disk.total_formatted} | Used: ${d.disk.used_formatted} (${d.disk.percent_used}%)`;
-          } else {
-            diskBadge.classList.add('hidden');
-          }
-        } else {
-          el.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span><span class="text-amber-400">Connecting…</span>`;
-          speedBadge.classList.add('hidden');
-          if (d && d.disk) {
-            diskBadge.classList.remove('hidden');
-            document.getElementById('diskFreeText').innerText = d.disk.free_formatted;
-          }
-        }
-      } catch(e) {
-      } finally {
-        isFetchingStatus = false;
-        setTimeout(pollStatus, 4000);
-      }
-    }
-
-    async function pollDownloads() {
-      if (isFetchingDownloads) return;
-      isFetchingDownloads = true;
-      try {
-        let url = `/api/downloads?mode=${currentMode}`;
-        if (only24h) url += '&hours=24';
-
-        const res = await fetch(url);
-        if (res.ok) {
-          const d = await res.json();
-          const list = document.getElementById('downloadsList');
-          const items = d.items || [];
-          document.getElementById('downloadsCountBadge').innerText = items.length;
-
-          // Update Queue & Free Storage Projection in tab
-          const queueSummaryEl = document.getElementById('downloadsQueueSummary');
-          const queueBytesText = document.getElementById('queueBytesText');
-          const queueAfterText = document.getElementById('queueAfterText');
-
-          if (d.queue_info && d.queue_info.queue_remaining_bytes > 0) {
-            const q = d.queue_info;
-            if (queueSummaryEl && queueBytesText && queueAfterText) {
-              queueSummaryEl.classList.remove('hidden');
-              queueBytesText.innerText = q.queue_remaining_formatted;
-              queueAfterText.innerText = q.after_download_free_formatted;
-              if (q.sufficient_space) {
-                queueAfterText.className = "text-emerald-400 font-medium";
-              } else {
-                queueAfterText.className = "text-red-400 font-medium";
-              }
-            }
-          } else {
-            if (queueSummaryEl) queueSummaryEl.classList.add('hidden');
-          }
-
-          if (!items.length) {
-            let msg = 'No active downloads';
-            if (currentMode === 'all') msg = 'No packages found';
-            if (only24h) msg = 'No packages in the last 24 hours';
-            list.innerHTML = `<div class="h-32 flex flex-col items-center justify-center text-slate-600 text-sm">
-              <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-              <span>${msg}</span></div>`;
-          } else {
-            const currentScroll = list.scrollTop;
-            const openContainer = openedDownloadsPackageId ? document.getElementById(`filesContainer_${openedDownloadsPackageId}`) : null;
-            const filesScroll = openContainer ? openContainer.scrollTop : 0;
-
-            list.innerHTML = items.map(renderDownloadPackage).join('');
-            list.scrollTop = currentScroll;
-
-            if (openedDownloadsPackageId) {
-              const restoredContainer = document.getElementById(`filesContainer_${openedDownloadsPackageId}`);
-              if (restoredContainer && filesScroll > 0) {
-                restoredContainer.scrollTop = filesScroll;
-              }
-              // Background update of package file progress if open
-              const openItem = items.find(it => String(it.uuid) === String(openedDownloadsPackageId));
-              const itemSource = (openItem && openItem.source) ? openItem.source : 'downloads';
-              fetchPackageFiles(openedDownloadsPackageId, itemSource);
-            }
-          }
-        }
-      } catch(e) {
-      } finally {
-        isFetchingDownloads = false;
-        setTimeout(pollDownloads, 3500);
-      }
-    }
-
-    async function pollLinkgrabber() {
-      if (isFetchingLinkgrabber) return;
-      isFetchingLinkgrabber = true;
-      try {
-        const res = await fetch('/api/linkgrabber');
-        if (res.ok) {
-          const d = await res.json();
-          const list = document.getElementById('linkgrabberList');
-          const items = d.items || [];
-          document.getElementById('linkgrabberCountBadge').innerText = items.length;
-
-          if (!items.length) {
-            list.innerHTML = `<div class="h-32 flex flex-col items-center justify-center text-slate-600 text-sm">
-              <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-              <span>Linkgrabber ist leer</span></div>`;
-          } else {
-            const currentScroll = list.scrollTop;
-            const openContainer = openedLinkgrabberPackageId ? document.getElementById(`filesContainer_${openedLinkgrabberPackageId}`) : null;
-            const filesScroll = openContainer ? openContainer.scrollTop : 0;
-
-            list.innerHTML = items.map(renderLinkgrabberPackage).join('');
-            list.scrollTop = currentScroll;
-
-            if (openedLinkgrabberPackageId) {
-              const restoredContainer = document.getElementById(`filesContainer_${openedLinkgrabberPackageId}`);
-              if (restoredContainer && filesScroll > 0) {
-                restoredContainer.scrollTop = filesScroll;
-              }
-              // Dateifortschritt im Hintergrund nachladen
-              fetchPackageFiles(openedLinkgrabberPackageId, 'linkgrabber');
-            }
-          }
-        }
-      } catch(e) {
-      } finally {
-        isFetchingLinkgrabber = false;
-        setTimeout(pollLinkgrabber, 3500);
-      }
-    }
-
-    function renderDownloadPackage(p) {
-      const isGdl = (p.source === 'gallery-dl');
-      const styles = {
-        running:  isGdl
-          ? { border: 'border-cyan-800/60',   bg: 'bg-cyan-950/20',   badge: 'bg-cyan-900/60 text-cyan-300 border-cyan-700/50', bar: 'bg-cyan-500' }
-          : { border: 'border-emerald-800/50', bg: 'bg-emerald-950/20', badge: 'bg-emerald-900/60 text-emerald-300 border-emerald-700/50', bar: 'bg-emerald-500' },
-        crawling: { border: 'border-amber-800/40',   bg: '',                  badge: 'bg-amber-900/40 text-amber-300 border-amber-700/40',       bar: 'bg-amber-400' },
-        error:    { border: 'border-red-800/60',      bg: 'bg-red-950/20',    badge: 'bg-red-900/50 text-red-300 border-red-700/50',             bar: 'bg-red-500' },
-        finished: isGdl
-          ? { border: 'border-cyan-900/40',   bg: 'bg-cyan-950/10',   badge: 'bg-cyan-950/50 text-cyan-300 border-cyan-800/40', bar: 'bg-cyan-600' }
-          : { border: 'border-slate-700/40',    bg: '',                  badge: 'bg-blue-900/30 text-blue-300 border-blue-800/40',           bar: 'bg-blue-500' },
-        queued:   { border: 'border-slate-800',       bg: 'bg-slate-950/50',  badge: 'bg-slate-800 text-slate-400 border-slate-700',             bar: 'bg-slate-600' },
-      };
-      const s = styles[p.category] || styles.queued;
-
-      const total = p.files_total || 0;
-      const done  = p.files_done  || 0;
-      const err   = p.files_error || 0;
-      const gdlPill = isGdl
-        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/60 shrink-0 flex items-center gap-1 shadow-sm" title="Downloader: gallery-dl"><span>📸</span><span>gallery-dl</span></span>`
-        : '';
-      const filePill = total > 1
-        ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 font-mono border border-slate-700 shrink-0">${done}/${total} file${total>1?'s':''}</span>`
-        : '';
-      const errPill = err > 0
-        ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-red-900/60 text-red-300 border border-red-700/50 shrink-0">${err}✕</span>`
-        : '';
-      let prioPill = '';
-      if (p.priority === 'HIGHEST') {
-        prioPill = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-300 border border-red-500/40 shrink-0 flex items-center gap-0.5" title="Priority: HIGHEST">⚡ HIGHEST</span>`;
-      } else if (p.priority === 'HIGH') {
-        prioPill = `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 flex items-center gap-0.5" title="Priority: HIGH">⚡ HIGH</span>`;
-      }
-
-      const prioBtnText = (p.priority === 'HIGH') ? 'Boost: Highest' : (p.priority === 'HIGHEST' ? 'Reset: Normal' : 'Boost: High');
-
-      const speedInfo = p.speed > 0
-        ? `<span class="text-emerald-400 font-semibold">${esc(p.speed_formatted)}</span>`
-        : '';
-      const etaInfo = p.eta > 0
-        ? `<span class="text-slate-400">ETA ${esc(p.eta_formatted)}</span>`
-        : '';
-
-      const isExpanded = (expandedPackageId === p.uuid);
-      const isFilesOpened = (openedDownloadsPackageId === p.uuid);
-
-      return `
-      <div onclick="togglePackageActions('${p.uuid}', event)"
-        class="border ${s.border} ${s.bg} bg-slate-950/60 hover:border-slate-700 cursor-pointer rounded-xl p-3 flex flex-col gap-2 transition select-none">
-        
-        <!-- Header row (Mobile optimized: wraps cleanly in portrait) -->
-        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 min-w-0">
-          <div class="min-w-0 flex-1 flex items-start gap-1.5 flex-wrap">
-            <span class="font-medium text-sm text-slate-100 break-words line-clamp-2 sm:truncate max-w-full flex-1 min-w-[120px]" title="${esc(p.name)}">${esc(p.name)}</span>
-            <div class="flex items-center gap-1 shrink-0 mt-0.5">
-              ${gdlPill}${prioPill}${filePill}${errPill}
-            </div>
-          </div>
-          <div class="flex items-center justify-between sm:justify-end gap-1.5 shrink-0">
-            <span class="px-2 py-0.5 rounded text-[11px] font-medium border ${s.badge}">${esc(p.status)}</span>
-            <span class="text-slate-500 hover:text-slate-300 p-1 text-xs">
-              ${isExpanded ? '▲' : '▼'}
-            </span>
-          </div>
-        </div>
-
-        <!-- Progress bar -->
-        <div class="w-full h-1.5 rounded-full bg-slate-800/80 overflow-hidden">
-          <div class="h-full rounded-full ${s.bar} transition-all duration-500" style="width:${Math.min(100,p.percent)}%"></div>
-        </div>
-
-        <!-- Info row (Mobile: clean flex wrap) -->
-        <div class="flex items-center justify-between text-xs font-mono text-slate-500 flex-wrap gap-1">
-          <span class="whitespace-nowrap">
-            ${isGdl && p.category === 'running' 
-              ? `${esc(p.bytes_loaded_formatted)} / ${esc(p.bytes_total_formatted)} · ${done}/${total} files <span class="text-cyan-400 font-semibold">(${p.percent}%)</span>` 
-              : `${esc(p.bytes_loaded_formatted)} / ${esc(p.bytes_total_formatted)} <span class="text-slate-600">(${p.percent}%)</span>`}
-          </span>
-          <div class="flex items-center gap-2 shrink-0">${speedInfo}${etaInfo}</div>
-        </div>
-
-        <!-- Pop-out Options: Actions + Show files + Reordering -->
-        ${isExpanded ? `
-        <div class="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 animate-fadeIn" onclick="event.stopPropagation()">
-          <button onclick="togglePackageFiles('${p.uuid}', 'downloads', event)"
-            class="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
-            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <span>${isFilesOpened ? 'Hide files ▲' : 'Show files (' + total + ') ▼'}</span>
-          </button>
-
-          <div class="flex items-center gap-1.5 flex-wrap">
-            ${!isGdl ? `
-            <!-- Manual Move Up / Down Buttons -->
-            <div class="flex items-center rounded-lg border border-slate-700 bg-slate-800 overflow-hidden shadow-sm">
-              <button onclick="movePackage('${p.uuid}', 'up', event)" title="Move up 1 position"
-                class="px-2 py-1.5 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center">
-                ▲
-              </button>
-              <div class="w-px h-4 bg-slate-700"></div>
-              <button onclick="movePackage('${p.uuid}', 'down', event)" title="Move down 1 position"
-                class="px-2 py-1.5 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center">
-                ▼
-              </button>
-            </div>
-
-            <!-- Priority cycle button -->
-            <button onclick="prioritizePackage('${p.uuid}', event)"
-              title="Click to cycle: Default -> High -> Highest"
-              class="px-2.5 py-1.5 rounded-lg bg-emerald-700/80 hover:bg-emerald-600 text-white text-xs font-medium transition flex items-center gap-1 shadow-sm">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              <span>${prioBtnText}</span>
-            </button>
-
-            <!-- Filter videos only in package -->
-            <button onclick="filterVideosInQueue('${p.uuid}', 'downloads', event)"
-              title="Remove all non-video files from this package"
-              class="px-2.5 py-1.5 rounded-lg border border-purple-800/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 text-xs font-medium transition flex items-center gap-1 shadow-sm">
-              <span>🎬 Videos only</span>
-            </button>` : ''}
-
-            <!-- Delete button -->
-            <button onclick="deletePackage('${p.uuid}', '${isGdl ? 'gallery-dl' : 'downloads'}', event)"
-              class="px-2 py-1.5 rounded-lg bg-red-900/60 hover:bg-red-800 text-red-200 border border-red-800/60 text-xs font-medium transition flex items-center gap-1 shadow-sm" title="Delete package">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            </button>
-          </div>
-        </div>` : ''}
-
-        <!-- Second Level: Nested Files View -->
-        ${isFilesOpened ? `
-        <div class="pt-2 border-t border-slate-800/80" onclick="event.stopPropagation()">
-          <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-800/60">
-            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Contained files:</span>
-            <button onclick="fetchPackageFiles('${p.uuid}', '${isGdl ? 'gallery-dl' : 'downloads'}')" class="text-[11px] text-slate-500 hover:text-slate-300 flex items-center gap-1 transition">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-              <span>Refresh</span>
-            </button>
-          </div>
-          <div id="filesContainer_${p.uuid}" class="space-y-1.5 max-h-72 overflow-y-auto pr-1 scroll-touch overscroll-contain pb-2">
-            ${renderFilesHtml(p.uuid)}
-          </div>
-        </div>` : ''}
-
-        ${p.is_error ? `
-        <div class="px-2.5 py-1.5 rounded-lg bg-red-950/60 border border-red-800/70 text-xs text-red-200 flex items-center gap-1.5">
-          <svg class="w-3.5 h-3.5 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span>${esc(p.status)}</span>
-        </div>` : ''}
-      </div>`;
-    }
-
-    function renderLinkgrabberPackage(p) {
-      const isGdl = (p.source === 'gallery-dl');
-      const total = p.files_total || 1;
-      const savePath = p.save_to || '/output';
-      const borderClass = isGdl ? 'border-cyan-800/60 bg-cyan-950/20' : 'border-slate-800 bg-slate-950/60';
-      const gdlPill = isGdl
-        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/60 shrink-0 flex items-center gap-1 shadow-sm" title="Downloader: gallery-dl"><span>📸</span><span>gallery-dl</span></span>`
-        : '';
-      const crawlPill = (isGdl && p.crawling)
-        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-900/60 text-amber-300 border border-amber-700/50 shrink-0 animate-pulse flex items-center gap-1"><span>🔄</span><span>Scanning</span></span>`
-        : '';
-
-      return `
-      <div class="border ${borderClass} hover:border-slate-700 rounded-xl p-3 flex flex-col gap-2.5 transition">
-        <div class="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
-          <div class="min-w-0 flex-1 flex flex-col gap-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-medium text-sm text-slate-100 truncate" title="${esc(p.name)}">${esc(p.name)}</span>
-              ${gdlPill}
-              ${crawlPill}
-              <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 font-mono border border-slate-700 shrink-0">${total} file${total>1?'s':''}</span>
-            </div>
-            <div class="text-xs text-slate-500 font-mono flex items-center gap-2 flex-wrap">
-              <span>Size: ${esc(p.bytes_total_formatted)}</span>
-              <span>·</span>
-              <span class="${p.crawling ? 'text-amber-400 font-medium' : 'text-slate-400'}">${esc(p.status)}</span>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2 shrink-0 ml-auto flex-wrap justify-end">
-            ${!isGdl ? `
-            <label class="flex items-center space-x-1.5 text-xs text-slate-400 cursor-pointer select-none bg-slate-900 border border-slate-800 hover:border-slate-700 px-2 py-1.5 rounded-lg transition" title="Attempts to download links even if marked offline">
-              <input type="checkbox" id="chkOffline_${p.uuid}" class="rounded border-slate-700 bg-slate-800 text-amber-500 h-3.5 w-3.5 focus:ring-amber-500/40">
-              <span class="text-[11px]">Force offline</span>
-            </label>` : ''}
-
-            <button onclick="filterVideosInQueue('${p.uuid}', 'linkgrabber', event)"
-              title="Filter this package: Remove all non-video files"
-              class="px-2.5 py-1.5 rounded-lg border border-purple-800/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 text-xs font-medium transition flex items-center gap-1 shadow-sm">
-              <span>🎬 Videos only</span>
-            </button>
-
-            <button onclick="downloadSingleLinkgrabber('${p.uuid}')"
-              class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-              <span>Download</span>
-            </button>
-
-            <button onclick="deletePackage('${p.uuid}', 'linkgrabber', event)"
-              title="Delete"
-              class="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/60 text-slate-400 hover:text-red-300 border border-slate-700 transition">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Download Path display -->
-        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 text-xs">
-          <div class="flex items-center gap-1.5 min-w-0 text-slate-400">
-            <svg class="w-3.5 h-3.5 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-            <span class="text-slate-500 shrink-0">Path:</span>
-            <span id="saveToText_${p.uuid}" class="font-mono text-[11px] text-slate-300 truncate" title="${esc(savePath)}">${esc(savePath)}</span>
-          </div>
-          <button onclick="openDirModal('${p.uuid}', '${esc(p.name).replace(/'/g, "\\'")}', '${esc(savePath).replace(/'/g, "\\'")}')"
-            class="px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs text-emerald-400 hover:text-emerald-300 shrink-0 font-medium transition flex items-center gap-1 border border-slate-700">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-            <span>Change</span>
-          </button>
-        </div>
-
-        <!-- Dateiliste aufklappen Button -->
-        <div class="pt-1.5 flex items-center justify-between">
-          <button onclick="togglePackageFiles('${p.uuid}', 'linkgrabber', event)"
-            class="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
-            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <span>${(openedLinkgrabberPackageId === p.uuid) ? 'Hide files ▲' : 'Show files (' + total + ') ▼'}</span>
-          </button>
-        </div>
-
-        <!-- Nested Files View in Linkgrabber -->
-        ${(openedLinkgrabberPackageId === p.uuid) ? `
-        <div class="pt-2 border-t border-slate-800/80" onclick="event.stopPropagation()">
-          <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-800/60">
-            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Found files:</span>
-            <button onclick="fetchPackageFiles('${p.uuid}', 'linkgrabber')" class="text-[11px] text-slate-500 hover:text-slate-300 flex items-center gap-1 transition">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-              <span>Refresh</span>
-            </button>
-          </div>
-          <div id="filesContainer_${p.uuid}" class="space-y-1.5 max-h-72 overflow-y-auto pr-1 scroll-touch overscroll-contain pb-2">
-            ${renderFilesHtml(p.uuid)}
-          </div>
-        </div>` : ''}
-      </div>`;
-    }
-
-    async function downloadSingleLinkgrabber(pkgId) {
-      const chk = document.getElementById('chkOffline_' + pkgId);
-      const forceOffline = chk ? chk.checked : false;
-
-      try {
-        const res = await fetch('/api/linkgrabber/download', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({package_ids: [pkgId], download_all: false, force_offline: forceOffline})
-        });
-        const d = await res.json();
-        if (res.ok && d.success) {
-          showToast("✓ " + d.message, false);
-          pollLinkgrabber();
-          pollDownloads();
-        } else {
-          showToast("Error: " + (d.detail || d.message), true);
-        }
-      } catch(e) { showToast("Network error", true); }
-    }
-
-    async function downloadAllLinkgrabber() {
-      try {
-        const res = await fetch('/api/linkgrabber/download', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({download_all: true, force_offline: false})
-        });
-        const d = await res.json();
-        if (res.ok && d.success) {
-          showToast("✓ All packages started!", false);
-          pollLinkgrabber();
-          pollDownloads();
-        } else {
-          showToast("Error: " + (d.detail || d.message), true);
-        }
-      } catch(e) { showToast("Network error", true); }
-    }
-
-    async function loadFolders() {
-      try {
-        const res = await fetch('/api/folders');
-        if (res.ok) {
-          const d = await res.json();
-          availableFolders = d.folders || [];
-          const dl = document.getElementById('folderSuggestions');
-          if (dl) {
-            dl.innerHTML = availableFolders.map(f => `<option value="${esc(f)}"></option>`).join('');
-          }
-        }
-      } catch(e) {}
-    }
-
-    async function promptCreateFolder(targetInputId) {
-      const folderName = prompt("Enter new folder name (will be created in /output):");
-      if (!folderName || !folderName.trim()) return;
-
-      const cleanName = folderName.trim();
-      try {
-        const res = await fetch('/api/folders/create', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({name: cleanName})
-        });
-        const d = await res.json();
-        if (res.ok && d.success) {
-          showToast("✓ Folder '" + d.name + "' created", false);
-          await loadFolders();
-          const inp = document.getElementById(targetInputId);
-          if (inp) {
-            inp.value = d.name;
-          }
-        } else {
-          showToast("Error: " + (d.detail || d.message), true);
-        }
-      } catch (e) {
-        showToast("Network error while creating folder", true);
-      }
-    }
-
-    let modalTargetPkgId = null;
-
-    function openDirModal(pkgId, pkgName, currentPath) {
-      modalTargetPkgId = pkgId;
-      document.getElementById('dirModalPackageName').innerText = pkgName;
-      const inp = document.getElementById('dirModalInput');
-      inp.value = currentPath || '/output';
-      document.getElementById('dirModal').classList.remove('hidden');
-      setTimeout(() => {
-        inp.focus();
-        inp.select();
-      }, 50);
-    }
-
-    function closeDirModal() {
-      modalTargetPkgId = null;
-      document.getElementById('dirModal').classList.add('hidden');
-    }
-
-    async function saveDirModal() {
-      if (!modalTargetPkgId) return;
-      const inp = document.getElementById('dirModalInput');
-      const directory = inp.value.trim();
-      if (!directory) {
-        showToast("Path cannot be empty", true);
-        return;
-      }
-
-      const pkgId = modalTargetPkgId;
-      try {
-        const res = await fetch('/api/linkgrabber/set-directory', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({package_uuid: Number(pkgId), directory})
-        });
-        const d = await res.json();
-        if (res.ok && d.success) {
-          showToast("✓ " + d.message, false);
-          closeDirModal();
-          pollLinkgrabber();
-        } else {
-          showToast("Error: " + (d.detail || d.message), true);
-        }
-      } catch(e) {
-        showToast("Network error", true);
-      }
-    }
-
-    async function submitLinks() {
-      const ta = document.getElementById('linksInput');
-      const destInput = document.getElementById('addDestinationFolder');
-      const autostart = document.getElementById('chkAutostart').checked;
-      const links = ta.value.trim();
-      const destinationFolder = destInput ? destInput.value.trim() : '';
-
-      if (!links) { showFeedback('Please paste links.', true); return; }
-
-      try {
-        const videos_only = document.getElementById('chkVideosOnly') ? document.getElementById('chkVideosOnly').checked : false;
-        const payload = {links, autostart, videos_only};
-        if (destinationFolder) {
-          payload.destination_folder = destinationFolder;
-        }
-
-        const res = await fetch('/api/links', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify(payload)
-        });
-        const d = await res.json();
-        if (res.ok && d.success) {
-          showFeedback('✓ ' + d.message, false);
-          ta.value = '';
-          if (destInput) destInput.value = '';
-          setTimeout(() => {
-            if (autostart) {
-              switchTab('downloads');
-            } else {
-              switchTab('linkgrabber');
-            }
-          }, 800);
-        } else {
-          showFeedback('Error: ' + (d.detail || 'Unknown error'), true);
-        }
-      } catch(e) { showFeedback('Network error: ' + e.message, true); }
-    }
-
-    async function filterVideosInQueue(pkgId, source, e) {
-      if (e) e.stopPropagation();
-      const targetDesc = pkgId ? "this package" : (source === 'linkgrabber' ? "all Linkgrabber packages" : "the active download queue");
-      if (!confirm(`Do you want to remove all non-video files (images, text, etc.) from ${targetDesc}?`)) {
-        return;
-      }
-      showToast("Filtering non-video files...", false);
-      try {
-        const res = await fetch('/api/filter-videos', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({package_uuid: pkgId, source: source})
-        });
-        const d = await res.json();
-        if (res.ok && d.success) {
-          showToast(`✓ Removed ${d.removed_count} non-video file(s)!`, false);
-          if (source === 'downloads') pollDownloads();
-          else pollLinkgrabber();
-        } else {
-          showToast("Error filtering videos: " + (d.detail || d.message), true);
-        }
-      } catch(err) {
-        showToast("Network error", true);
-      }
-    }
-
-    function showFeedback(text, isErr) {
-      const m = document.getElementById('submitMessage');
-      m.innerText = text;
-      m.className = isErr
-        ? 'mt-3 p-2.5 rounded-lg text-xs font-medium bg-red-950 border border-red-800 text-red-300 block'
-        : 'mt-3 p-2.5 rounded-lg text-xs font-medium bg-emerald-950 border border-emerald-800 text-emerald-300 block';
-      setTimeout(() => { m.className = 'hidden mt-3 p-2.5 rounded-lg text-xs font-medium'; }, 5000);
-    }
-
-    async function togglePause() {
-      const action = isPaused ? 'resume' : 'pause';
-      try {
-        const res = await fetch('/api/control', {
-          method: 'POST', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({action})
-        });
-        if (res.ok) {
-          isPaused = !isPaused;
-          document.getElementById('pauseIcon').innerText = isPaused ? '▶' : '⏸';
-          document.getElementById('pauseText').innerText = isPaused ? 'Resume' : 'Pause';
-        }
-      } catch(e) {}
-    }
-
-    function esc(s) {
-      if (!s) return '';
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    loadFolders();
-    pollStatus();
+  }catch(e){}
+  finally{State.busy.lg=false;setTimeout(pollLinkgrabber,3500);}
+}
+
+/* ============================================================
+   AKTIONEN
+   ============================================================ */
+function switchTab(tab){
+  State.tab=tab;
+  ['downloads','linkgrabber','add'].forEach(t=>{
+    $('panel'+cap(t)).classList.toggle('on',t===tab);
+    $('tab'+cap(t)).classList.toggle('active',t===tab);
+  });
+  if(tab==='downloads')pollDownloads();
+  if(tab==='linkgrabber')pollLinkgrabber();
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function setMode(m){
+  State.mode=m;
+  $('modeActive').classList.toggle('on',m==='active');
+  $('modeAll').classList.toggle('on',m==='all');
+  pollDownloads();
+}
+function toggle24h(){
+  State.only24h=!State.only24h;
+  const b=$('btn24h');
+  b.classList.toggle('on',State.only24h);
+  b.classList.toggle('tint',State.only24h);
+  $('dot24').style.background=State.only24h?'var(--accent)':'var(--text-faint)';
+  pollDownloads();
+}
+function togglePackageActions(id,e){
+  if(e)e.stopPropagation();
+  State.expandedPkg=(State.expandedPkg===id)?null:id;
+  pollDownloads();
+}
+function togglePackageFiles(id,source,e){
+  if(e)e.stopPropagation();
+  if(source==='downloads'){
+    State.openDlFiles=(State.openDlFiles===id)?null:id;
     pollDownloads();
+    if(State.openDlFiles){
+      const src=String(id).startsWith('gdl_')?'gallery-dl':'downloads';
+      fetchPackageFiles(State.openDlFiles,src);
+    }
+  }else{
+    State.openLgFiles=(State.openLgFiles===id)?null:id;
     pollLinkgrabber();
-  </script>
+    if(State.openLgFiles)setTimeout(()=>fetchPackageFiles(State.openLgFiles,'linkgrabber'),50);
+  }
+}
+async function fetchPackageFiles(id,source){
+  try{
+    const res=await fetch('/api/downloads/files?package_uuid='+encodeURIComponent(id)+'&source='+encodeURIComponent(source));
+    if(res.ok){
+      const d=await res.json();
+      State.filesCache[id]=d.files||[];
+      const open = (source==='gallery-dl'||source==='downloads') ? (State.openDlFiles===id) : (State.openLgFiles===id);
+      if(open){
+        const el=$('fc_'+id);
+        if(el){
+          const top=el.scrollTop;
+          el.innerHTML=(d.files||[]).length?d.files.map(renderFileItem).join(''):'<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien.</div>';
+          el.scrollTop=top;
+        }
+      }
+    }
+  }catch(e){}
+}
+
+async function prioritizePackage(id,e){
+  if(e)e.stopPropagation();
+  toast('Aktualisiere Priorität…');
+  const {ok,d}=await post('/api/downloads/prioritize',{package_uuid:id,source:'downloads'});
+  if(ok&&d.success){toast(d.message||'Priorität aktualisiert');pollDownloads();}
+  else toast('Prioritätsfehler',true);
+}
+async function movePackage(id,direction,e){
+  if(e)e.stopPropagation();
+  const {ok,d}=await post('/api/downloads/move',{package_uuid:id,direction:direction});
+  if(ok&&d.success){toast(direction==='up'?'Nach oben':'Nach unten');pollDownloads();}
+  else toast('Verschleben fehlgeschlagen',true);
+}
+async function deletePackage(id,source,e){
+  if(e)e.stopPropagation();
+  if(!openConfirm('Dieses Paket wirklich löschen?'))return;
+  const {ok,d}=await post('/api/downloads/delete',{package_uuid:id,source:source});
+  if(ok&&d.success){
+    toast('Paket gelöscht');
+    State.expandedPkg=null;
+    if(source==='linkgrabber'){State.openLgFiles=null;pollLinkgrabber();}
+    else{State.openDlFiles=null;pollDownloads();}
+  }else toast('Löschen fehlgeschlagen',true);
+}
+async function downloadSingleLinkgrabber(id){
+  const chk=$('off_'+id);
+  const force=chk?chk.checked:false;
+  const {ok,d}=await post('/api/linkgrabber/download',{package_ids:[id],download_all:false,force_offline:force,videos_only:false});
+  if(ok&&d.success){toast(d.message);pollLinkgrabber();pollDownloads();}
+  else toast('Fehler: '+(d.detail||d.message||'unbekannt'),true);
+}
+async function downloadAllLinkgrabber(){
+  const {ok,d}=await post('/api/linkgrabber/download',{download_all:true,force_offline:false,videos_only:false});
+  if(ok&&d.success){toast('Alle Pakete gestartet');pollLinkgrabber();pollDownloads();}
+  else toast('Fehler: '+(d.detail||d.message||'unbekannt'),true);
+}
+async function filterVideosInQueue(id,source,e){
+  if(e)e.stopPropagation();
+  const t=id?'dieses Paket':(source==='linkgrabber'?'alle Grabber-Pakete':'die aktive Queue');
+  if(!openConfirm('Alle Nicht-Video-Dateien (Bilder, Text, …) aus '+t+' entfernen?'))return;
+  toast('Filtere Nicht-Videos…');
+  const {ok,d}=await post('/api/filter-videos',{package_uuid:id,source:source});
+  if(ok&&d.success){toast(d.message||'Fertig');if(source==='downloads')pollDownloads();else pollLinkgrabber();}
+  else toast('Filterfehler: '+(d.detail||d.message||''),true);
+}
+
+/* ---- DirModal ---- */
+function openDirModal(id,name,path){
+  State.dirTarget=id;
+  $('dirPkg').textContent=name||'';
+  $('dirCur').textContent=path||'/output';
+  const inp=$('dirInput');
+  inp.value=path||'/output';
+  const chips=$('dirFolderChips');
+  chips.innerHTML=State.folders.map(f=>`<button class="folder-chip" onclick="$('dirInput').value='${esc(f)}'">${esc(f)}</button>`).join('');
+  $('dirOverlay').classList.add('on');
+  setTimeout(()=>{inp.focus();inp.select();},60);
+}
+function closeDirModal(){State.dirTarget=null;$('dirOverlay').classList.remove('on');}
+async function saveDirModal(){
+  const id=State.dirTarget;
+  if(!id)return;
+  const directory=$('dirInput').value.trim();
+  if(!directory){toast('Pfad darf nicht leer sein',true);return;}
+  const {ok,d}=await post('/api/linkgrabber/set-directory',{package_uuid:Number(id),directory:directory});
+  if(ok&&d.success){toast(d.message||'Pfad gespeichert');closeDirModal();pollLinkgrabber();}
+  else toast('Fehler: '+(d.detail||d.message||''),true);
+}
+
+/* ---- Add Links ---- */
+async function loadFolders(){
+  try{
+    const d=await fetch('/api/folders').then(r=>r.json());
+    State.folders=(d&&d.folders)||[];
+    $('folderSuggestions').innerHTML=State.folders.map(f=>`<option value="${esc(f)}"></option>`).join('');
+  }catch(e){}
+}
+async function promptCreateFolder(targetId){
+  const name=window.prompt('Neuen Ordnernamen eingeben (wird unter /output angelegt):');
+  if(!name||!name.trim())return;
+  const {ok,d}=await post('/api/folders/create',{name:name.trim()});
+  if(ok&&d.success){
+    toast('Ordner "'+d.name+'" erstellt');
+    await loadFolders();
+    const inp=$(targetId);if(inp)inp.value=d.name;
+  }else toast('Fehler: '+(d.detail||d.message||''),true);
+}
+async function submitLinks(){
+  const ta=$('linksInput');
+  const links=ta.value.trim();
+  const destInp=$('addDestinationFolder');
+  const destinationFolder=destInp.value.trim();
+  const autostart=$('chkAutostart').checked;
+  const videos_only=$('chkVideosOnly').checked;
+  const fb=$('addFeedback');
+  if(!links){showFeedback(fb,'Bitte Links einfügen.',true);return;}
+  const payload={links:links,autostart:autostart,videos_only:videos_only};
+  if(destinationFolder)payload.destination_folder=destinationFolder;
+  const {ok,d}=await post('/api/links',payload);
+  if(ok&&d.success){
+    showFeedback(fb,'✓ '+d.message,false);
+    ta.value='';destInp.value='';
+    setTimeout(()=>switchTab(autostart?'downloads':'linkgrabber'),800);
+  }else showFeedback(fb,'Fehler: '+(d.detail||'Unbekannter Fehler'),true);
+}
+function showFeedback(el,text,isErr){
+  el.textContent=text;
+  el.className='feedback '+(isErr?'err':'ok');
+  clearTimeout(el._h);
+  el._h=setTimeout(()=>{el.className='feedback';},5000);
+}
+
+/* ---- Pause / Resume ---- */
+function renderPause(){
+  const btn=$('pauseBtn'),icon=$('pauseIcon'),lbl=$('pauseLbl');
+  btn.classList.toggle('highlight',State.isPaused);
+  icon.innerHTML=State.isPaused
+    ? '<path d="M8 5v14l11-7z"/>'
+    : '<path d="M8 5v14M16 5v14"/>';
+  lbl.textContent=State.isPaused?'Weiter':'Pause';
+}
+async function togglePause(){
+  const action=State.isPaused?'resume':'pause';
+  const {ok}=await post('/api/control',{action:action});
+  if(ok){State.isPaused=!State.isPaused;renderPause();}
+  else toast('Steuerung fehlgeschlagen',true);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+renderPause();
+loadFolders();
+pollStatus();
+pollDownloads();
+pollLinkgrabber();
+</script>
 </body>
 </html>
