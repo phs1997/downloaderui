@@ -291,16 +291,18 @@ header{
   display:flex;align-items:center;gap:9px;padding:9px 15px;border-top:1px solid rgba(244,63,94,.25);
   background:rgba(244,63,94,.08);color:var(--red);font-size:12px;flex-wrap:nowrap;min-width:0;
 }
-.errstrip .estxt{flex:1;min-width:0;word-break:break-word;overflow-wrap:anywhere;}
-/* Lange Fehlertexte: max. 2 Zeilen, Rest zeilenalweis abgeschnitten */
-.estxt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;}
+.errstrip .estxt{flex:1;min-width:0;word-break:break-word;overflow-wrap:break-word;}
+/* Lange Fehlertexte: max. 2 Zeilen (kein line-clamp — der ist auf iOS/Flex unzuverlässig
+   und kann die Box aufblasen); stattdessen max-height via fester line-height, kaputt­
+   sicher in jedem Browser. */
+.estxt{overflow:hidden;line-height:1.35;max-height:2.7em;display:block;}
 .files{border-top:1px solid var(--stroke-soft);background:rgba(10,6,22,.4);padding:10px 14px}
 .files-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
 .fileitem{padding:8px 2px;border-bottom:1px solid var(--stroke-soft);min-width:0}
 .fileitem:last-child{border-bottom:none}
-.fileitem .fr{display:flex;align-items:center;gap:9px;min-width:0}
+.fileitem .fr{display:flex;align-items:flex-start;gap:9px;min-width:0}
 .fileitem .fn{font-size:12px;min-width:0;flex:1;word-break:break-all}
-.fstatus{font-size:10px;font-family:var(--mono);flex:none;padding:2px 7px;border-radius:5px;font-weight:600;white-space:nowrap}
+.fstatus{font-size:10px;font-family:var(--mono);flex:none;padding:2px 7px;border-radius:5px;font-weight:600;white-space:normal;word-break:break-word;max-width:55%;max-height:3.1em;overflow:hidden;line-height:1.3;text-align:right;min-width:0}
 .f-done{color:var(--cyan);background:rgba(34,211,238,.1)}
 .f-run{color:var(--mint);background:rgba(52,211,153,.1)}
 .f-err{color:var(--red);background:rgba(244,63,94,.12)}
@@ -638,10 +640,12 @@ function dlMetaChips(p){
    RENDER — Dateiliste
    ============================================================ */
 function renderFileItem(f){
-  let st='wait',lbl=esc(f.status||'Wartet');
+  let st='wait',lbl=f.status||'Wartet';
   if(f.finished){st='done';lbl='Fertig';}
   else if(f.running){st='run';lbl='Lädt';}
   else if(f.status&&f.status.toLowerCase().includes('error')){st='err';lbl='Fehler';}
+  else if(lbl.startsWith('The server hosting')||lbl.length>60){st='err';lbl='Host nicht erreichbar';}
+  lbl=esc(lbl);
   const bar=(f.running||f.finished)?'<div class="fb"><div class="f" style="width:'+Math.min(100,f.percent||0)+'%"></div></div>':'';
   const speed=f.speed_formatted?'<span style="color:var(--cyan)">'+esc(f.speed_formatted)+'</span>':'';
   const eta=f.eta_formatted?'<span>ETA '+esc(f.eta_formatted)+'</span>':'';
