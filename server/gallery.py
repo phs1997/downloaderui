@@ -267,6 +267,32 @@ class GalleryDlManager:
         threading.Thread(target=self._run_download, args=(task_id,), daemon=True).start()
         return True
 
+    def retry_download(self, task_id: str) -> bool:
+        """Restart a failed (or any) gallery-dl download task. Already-downloaded
+        files are skipped automatically by gallery-dl (part/archive markers), so
+        this only re-attempts missing/failed items."""
+        with self._lock:
+            task = self.tasks.get(task_id)
+            if not task:
+                return False
+            # If a process is still running, refuse (avoid double-run).
+            if task.get("process"):
+                task["status"] = "Already running"
+                return False
+            # Reset error state and queue as running again.
+            task["stage"] = "downloading"
+            task["category"] = "running"
+            task["is_error"] = False
+            task["files_error"] = 0
+            task["files_running"] = 1
+            task["status"] = "Restarting download..."
+            if not task.get("files_total"):
+                task["files_total"] = 0
+            self._save_tasks()
+
+        threading.Thread(target=self._run_download, args=(task_id,), daemon=True).start()
+        return True
+
     def _run_download(self, task_id: str):
         task = self.tasks.get(task_id)
         if not task:

@@ -523,6 +523,23 @@ def delete_download(req: PackageActionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/downloads/retry")
+def retry_download(req: PackageActionRequest):
+    """Retry a failed gallery-dl download. gallery-dl skips already-finished
+    files, so this only re-attempts missing/failed ones."""
+    try:
+        if req.source == "gallery-dl" or str(req.package_uuid).startswith("gdl_"):
+            ok = gdl_manager.retry_download(str(req.package_uuid))
+            if not ok:
+                raise HTTPException(status_code=404, detail="gallery-dl task not found or already running")
+            return {"success": True, "message": "gallery-dl download restarted"}
+        raise HTTPException(status_code=400, detail="Retry is only supported for gallery-dl downloads")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/links")
 def add_links(req: AddLinksRequest):
     return process_add_links(client, gdl_manager, req)

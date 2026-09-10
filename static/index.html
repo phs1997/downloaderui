@@ -676,7 +676,8 @@ function renderDownloadPackage(p){
           <button onclick="movePackage('${id}','down',event)" title="Um 1 nach unten">${I('down','sm')}</button>
         </div>
         <button class="btn" onclick="prioritizePackage('${id}',event)" title="Priorität: Normal → Hoch → Höchste">${I('bolt','sm')}Priorität</button>
-        <button class="btn tint" onclick="filterVideosInQueue('${id}','downloads',event)">${I('video','sm')}Videos only</button>`;
+        <button class="btn tint" onclick="filterVideosInQueue('${id}','downloads',event)">${I('video','sm')}Videos only</button>
+        ${p.is_error?`<button class="btn tint" title="Fehlgeschlagene Dateien erneut versuchen" onclick="retryDownload('${id}',event)">${I('refresh','sm')}Wiederholen</button>`:''}`;
     }
     actions=`
     <div class="actions" onclick="event.stopPropagation()">
@@ -687,7 +688,9 @@ function renderDownloadPackage(p){
     </div>`;
   }
 
-  const errStrip=p.is_error?`<div class="errstrip">${I('err')}${esc(p.status)}</div>`:'';
+  const errStrip=p.is_error?`<div class="errstrip">${I('err')}${esc(p.status)}
+      ${gdl?`<button class="btn sm tint" title="Fehlgeschlagene Dateien erneut versuchen" onclick="retryDownload('${id}',event)">${I('refresh','sm')}Wiederholen</button>`:''}
+    </div>`:'';
   const fileBlock=filesOpen?filesBlock(p.uuid,gdl?'gdl':'dl'):'';
 
   return `<div class="dl ${open?'is-open':''}" data-cat="${esc(cat)}">
@@ -953,6 +956,12 @@ async function movePackage(id,direction,e){
   const {ok,d}=await post('/api/downloads/move',{package_uuid:id,direction:direction});
   if(ok&&d.success){toast(direction==='up'?'Nach oben':'Nach unten');pollDownloads();}
   else toast('Verschleben fehlgeschlagen',true);
+}
+async function retryDownload(id,e){
+  if(e)e.stopPropagation();
+  const {ok,d}=await post('/api/downloads/retry',{package_uuid:id,source:'gallery-dl'});
+  if(ok&&d.success){toast(d.message);pollDownloads();}
+  else toast('Fehler: '+(d.detail||d.message||'unbekannt'),true);
 }
 async function deletePackage(id,source,e){
   if(e)e.stopPropagation();
