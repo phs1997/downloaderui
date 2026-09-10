@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JDownloader WebUI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .scroll-touch { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased overflow-x-hidden">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-20">
+    <div class="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+      <div class="flex items-center space-x-2 sm:space-x-3 shrink-0 min-w-0">
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white text-xs sm:text-sm shadow-lg shadow-emerald-600/30 shrink-0">JD</div>
+        <div class="min-w-0">
+          <h1 class="font-semibold text-xs sm:text-sm leading-tight truncate">JDownloader</h1>
+          <div id="connectionStatus" class="flex items-center space-x-1.5 text-[11px] sm:text-xs text-slate-400 truncate">
+            <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-500 animate-pulse inline-block shrink-0"></span>
+            <span class="truncate">Connecting…</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+        <!-- Storage display (MergerFS / NAS) -->
+        <div id="diskBadge" class="hidden flex items-center space-x-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] sm:text-xs font-mono text-slate-300" title="Available storage space">
+          <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+          <span class="whitespace-nowrap"><strong id="diskFreeText" class="text-emerald-400">--</strong></span>
+        </div>
+
+        <!-- Download Speed -->
+        <div id="speedBadge" class="hidden flex items-center space-x-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] sm:text-xs font-mono text-emerald-400">
+          <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+          <span id="speedText" class="whitespace-nowrap">0 B/s</span>
+        </div>
+
+        <button onclick="togglePause()" class="px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition flex items-center space-x-1 shrink-0">
+          <span id="pauseIcon">⏸</span><span id="pauseText" class="hidden sm:inline">Pause</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Global Action Notification Toast -->
+  <div id="actionToast" class="fixed top-16 right-4 z-50 hidden max-w-sm p-3 rounded-xl shadow-2xl text-xs font-medium transition-all"></div>
+
+  <!-- Download Path Edit Modal (Independent of polling re-renders) -->
+  <div id="dirModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 animate-fadeIn">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+          <h3 class="font-semibold text-sm text-slate-100">Set Download Path</h3>
+        </div>
+        <button onclick="closeDirModal()" class="text-slate-400 hover:text-slate-200 text-lg leading-none p-1">✕</button>
+      </div>
+
+      <div>
+        <p class="text-xs text-slate-400 mb-1">Package: <span id="dirModalPackageName" class="text-slate-200 font-medium"></span></p>
+        <div class="flex items-center justify-between mb-1.5">
+          <p class="text-[11px] text-slate-500">Choose an existing folder in storage (`/output`) or enter a new folder name.</p>
+          <button type="button" onclick="promptCreateFolder('dirModalInput')"
+            class="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 transition px-2 py-0.5 rounded bg-slate-800 border border-slate-700 shrink-0 ml-2">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>New Folder</span>
+          </button>
+        </div>
+        
+        <input type="text" id="dirModalInput" list="folderSuggestions"
+          placeholder="/output or folder name…"
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="closeDirModal()"
+          class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+          Cancel
+        </button>
+        <button onclick="saveDirModal()"
+          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-medium shadow-md shadow-emerald-600/20 transition">
+          Save Path
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="max-w-4xl w-full mx-auto px-4 py-5 flex-1 flex flex-col space-y-4 overflow-x-hidden">
+
+    <!-- Tab Navigation -->
+    <div class="flex border-b border-slate-800 w-full">
+      <button id="tabBtnDownloads" onclick="switchTab('downloads')"
+        class="flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-emerald-500 text-emerald-400 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap">
+        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span>Downloads</span>
+        <span id="downloadsCountBadge" class="px-1.5 py-0.2 rounded-full text-[10px] sm:text-[11px] bg-slate-800 text-slate-400 font-mono">0</span>
+      </button>
+
+      <button id="tabBtnLinkgrabber" onclick="switchTab('linkgrabber')"
+        class="flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap">
+        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        <span>Linkgrabber</span>
+        <span id="linkgrabberCountBadge" class="px-1.5 py-0.2 rounded-full text-[10px] sm:text-[11px] bg-slate-800 text-slate-400 font-mono">0</span>
+      </button>
+
+      <button id="tabBtnAdd" onclick="switchTab('add')"
+        class="flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap">
+        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span>Add Links</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: DOWNLOADS / HISTORY -->
+    <section id="tabDownloads" class="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-wrap gap-2">
+        <div class="flex items-center space-x-2">
+          <h2 class="font-semibold text-sm">Download Packages</h2>
+        </div>
+        
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+          <span id="downloadsQueueSummary" class="hidden text-[10px] sm:text-[11px] font-mono px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
+            Queue: <span id="queueBytesText" class="text-amber-400 font-medium">--</span> · Left: <span id="queueAfterText" class="text-emerald-400 font-medium">--</span>
+          </span>
+
+          <div class="flex rounded-lg bg-slate-950 p-0.5 border border-slate-800 text-xs">
+            <button id="btnModeActive" onclick="setMode('active')"
+              class="px-2.5 py-1 rounded-md font-medium transition bg-slate-800 text-slate-200 shadow-sm">
+              Active
+            </button>
+            <button id="btnModeAll" onclick="setMode('all')"
+              class="px-2.5 py-1 rounded-md font-medium transition text-slate-400 hover:text-slate-200">
+              Show all
+            </button>
+          </div>
+
+          <button onclick="filterVideosInQueue(null, 'downloads', event)" title="Remove JPGs/images/text from active download queue"
+            class="px-2.5 py-1 text-xs font-medium rounded-lg border border-purple-800/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 transition flex items-center gap-1.5 shadow-sm">
+            <span>🎬 Videos only</span>
+          </button>
+
+          <button id="btn24h" onclick="toggle24h()"
+            class="px-2.5 py-1 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5">
+            <span id="dot24h" class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <span>24h</span>
+          </button>
+          
+          <div class="text-xs text-slate-500 flex items-center space-x-1 ml-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+            <span>Live</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="downloadsList" class="overflow-y-auto space-y-2 max-h-[75vh] min-h-[140px] pr-0.5 scroll-touch overscroll-contain pb-6">
+        <div class="h-32 flex flex-col items-center justify-center text-slate-600 text-sm">
+          <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>No active downloads</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: LINKGRABBER -->
+    <section id="tabLinkgrabber" class="hidden flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-wrap gap-2">
+        <div class="flex items-center space-x-2">
+          <h2 class="font-semibold text-sm">Scraped Packages in Linkgrabber</h2>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="filterVideosInQueue(null, 'linkgrabber', event)"
+            title="Filter all linkgrabber packages: Remove all non-video files"
+            class="px-2.5 py-1.5 rounded-xl border border-purple-800/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 text-xs font-medium shadow-sm transition flex items-center gap-1.5">
+            <span>🎬 Videos only</span>
+          </button>
+          <button onclick="downloadAllLinkgrabber()"
+            class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-medium shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span>Download All</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="linkgrabberActionMsg" class="hidden mb-3 p-2.5 rounded-lg text-xs font-medium"></div>
+
+      <div id="linkgrabberList" class="overflow-y-auto space-y-2 max-h-[75vh] min-h-[140px] pr-0.5 scroll-touch overscroll-contain pb-6">
+        <div class="h-32 flex flex-col items-center justify-center text-slate-600 text-sm">
+          <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          <span>Linkgrabber is empty</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ADD LINKS -->
+    <section id="tabAdd" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <h2 class="font-semibold text-sm mb-2 text-slate-200">Add New Download Links</h2>
+      <p class="text-xs text-slate-400 mb-3">Paste links here – they will be collected in the Linkgrabber and can be started individually or together.</p>
+
+      <textarea id="linksInput" rows="5"
+        placeholder="Paste links here – one link per line or separated by spaces…"
+        class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-600 font-mono transition resize-y"
+      ></textarea>
+      
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-1">
+          <label class="block text-xs font-medium text-slate-400">Destination folder (optional):</label>
+          <button type="button" onclick="promptCreateFolder('addDestinationFolder')"
+            class="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 transition px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>New Folder</span>
+          </button>
+        </div>
+        <div class="relative">
+          <input type="text" id="addDestinationFolder" list="folderSuggestions"
+            placeholder="/output or folder name like Movies, Series/Season 1…"
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-600 transition">
+          <datalist id="folderSuggestions"></datalist>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-1">Leave blank for JDownloader default (`/output/&lt;PackageName&gt;`). You can choose an existing folder or create a new one.</p>
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-4">
+          <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none">
+            <input type="checkbox" id="chkVideosOnly" class="rounded border-slate-700 bg-slate-800 text-purple-500 h-4 w-4">
+            <span class="text-purple-300 font-medium">🎬 Videos only (ignore images & text)</span>
+          </label>
+          <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none">
+            <input type="checkbox" id="chkAutostart" class="rounded border-slate-700 bg-slate-800 text-emerald-500 h-4 w-4">
+            <span>Add directly to download list & start</span>
+          </label>
+        </div>
+        <button onclick="submitLinks()"
+          class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-sm font-medium shadow-lg shadow-emerald-600/20 transition flex items-center space-x-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <span>Send to Linkgrabber</span>
+        </button>
+      </div>
+      <div id="submitMessage" class="hidden mt-3 p-2.5 rounded-lg text-xs font-medium"></div>
+    </section>
+  </main>
+
+  <footer class="py-6 pb-12 text-center text-xs text-slate-700">JDownloader WebUI Lite · 100% Local</footer>
+
+  <script>
+    let isPaused = false;
+    let only24h = false;
+    let currentMode = 'active';
+    let currentTab = 'downloads';
+    let expandedPackageId = null;
+    let openedDownloadsPackageId = null;
+    let openedLinkgrabberPackageId = null;
+    let editingDirectoryPackageId = null;
+    let availableFolders = [];
+    let packageFilesCache = {};
+    let isFetchingFiles = false;
+    let isFetchingDownloads = false;
+    let isFetchingLinkgrabber = false;
+    let isFetchingStatus = false;
+
+    function switchTab(tab) {
+      currentTab = tab;
+      const tabs = ['downloads', 'linkgrabber', 'add'];
+      tabs.forEach(t => {
+        const sec = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (t === tab) {
+          sec.classList.remove('hidden');
+          btn.className = "flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-emerald-500 text-emerald-400 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap";
+        } else {
+          sec.classList.add('hidden');
+          btn.className = "flex-1 sm:flex-initial justify-center px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap";
+        }
+      });
+
+      if (tab === 'downloads') pollDownloads();
+      if (tab === 'linkgrabber') pollLinkgrabber();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      const bActive = document.getElementById('btnModeActive');
+      const bAll = document.getElementById('btnModeAll');
+      if (mode === 'active') {
+        bActive.className = "px-2.5 py-1 rounded-md font-medium transition bg-slate-800 text-slate-200 shadow-sm";
+        bAll.className = "px-2.5 py-1 rounded-md font-medium transition text-slate-400 hover:text-slate-200";
+      } else {
+        bAll.className = "px-2.5 py-1 rounded-md font-medium transition bg-slate-800 text-slate-200 shadow-sm";
+        bActive.className = "px-2.5 py-1 rounded-md font-medium transition text-slate-400 hover:text-slate-200";
+      }
+      pollDownloads();
+    }
+
+    function toggle24h() {
+      only24h = !only24h;
+      const btn = document.getElementById('btn24h');
+      const dot = document.getElementById('dot24h');
+      if (only24h) {
+        btn.classList.remove('bg-slate-800/80', 'text-slate-300', 'border-slate-700');
+        btn.classList.add('bg-emerald-950', 'text-emerald-300', 'border-emerald-700/80');
+        dot.classList.remove('bg-slate-500');
+        dot.classList.add('bg-emerald-400');
+      } else {
+        btn.classList.add('bg-slate-800/80', 'text-slate-300', 'border-slate-700');
+        btn.classList.remove('bg-emerald-950', 'text-emerald-300', 'border-emerald-700/80');
+        dot.classList.add('bg-slate-500');
+        dot.classList.remove('bg-emerald-400');
+      }
+      pollDownloads();
+    }
+
+    function togglePackageActions(pkgId, e) {
+      if (e) e.stopPropagation();
+      expandedPackageId = (expandedPackageId === pkgId) ? null : pkgId;
+      pollDownloads();
+    }
+
+    async function togglePackageFiles(pkgId, source = 'downloads', e) {
+      if (e) e.stopPropagation();
+      if (source === 'downloads') {
+        if (openedDownloadsPackageId === pkgId) {
+          openedDownloadsPackageId = null;
+          pollDownloads();
+          return;
+        }
+        openedDownloadsPackageId = pkgId;
+        pollDownloads();
+        fetchPackageFiles(pkgId, 'downloads');
+      } else {
+        if (openedLinkgrabberPackageId === pkgId) {
+          openedLinkgrabberPackageId = null;
+          pollLinkgrabber();
+          return;
+        }
+        openedLinkgrabberPackageId = pkgId;
+        pollLinkgrabber();
+        fetchPackageFiles(pkgId, 'linkgrabber');
+      }
+    }
+
+    async function fetchPackageFiles(pkgId, source = 'downloads') {
+      try {
+        const res = await fetch(`/api/downloads/files?package_uuid=${pkgId}&source=${source}`);
+        if (res.ok) {
+          const d = await res.json();
+          packageFilesCache[pkgId] = d.files || [];
+          const isCurrent = (source === 'downloads' && openedDownloadsPackageId === pkgId) ||
+                            (source === 'linkgrabber' && openedLinkgrabberPackageId === pkgId);
+          if (isCurrent) {
+            renderFilesContainer(pkgId);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching files:", err);
+      }
+    }
+
+    function renderFilesHtml(pkgId) {
+      const files = packageFilesCache[pkgId];
+      if (!files) {
+        return `<div class="py-3 text-center text-xs text-slate-500 animate-pulse">Loading file list…</div>`;
+      }
+      if (files.length === 0) {
+        return `<div class="py-2 text-center text-xs text-slate-500">No files found.</div>`;
+      }
+
+      return files.map(f => {
+        let statusBadge = '';
+        if (f.finished) {
+          statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-900/40 text-blue-300 border border-blue-800/40 shrink-0">Finished</span>`;
+        } else if (f.running) {
+          statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 shrink-0 animate-pulse">Downloading</span>`;
+        } else if (f.status && f.status.toLowerCase().includes('error')) {
+          statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-900/60 text-red-300 border border-red-700/50 shrink-0">Error</span>`;
+        } else {
+          statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 shrink-0">${esc(f.status || 'Queued')}</span>`;
+        }
+
+        const fSpeed = f.speed_formatted ? `<span class="text-emerald-400 shrink-0">${esc(f.speed_formatted)}</span>` : '';
+        const fEta = f.eta_formatted ? `<span class="text-slate-500 shrink-0">${esc(f.eta_formatted)}</span>` : '';
+
+        return `
+        <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800 flex flex-col gap-1 text-xs">
+          <div class="flex items-center justify-between gap-2 min-w-0">
+            <span class="font-normal text-slate-200 truncate break-all flex-1 min-w-0" title="${esc(f.name)}">${esc(f.name)}</span>
+            ${statusBadge}
+          </div>
+          <div class="flex items-center justify-between text-[11px] font-mono text-slate-500">
+            <span>${esc(f.bytes_loaded_formatted)} / ${esc(f.bytes_total_formatted)} <span class="text-slate-600">(${f.percent}%)</span></span>
+            <div class="flex items-center gap-2">${fSpeed}${fEta}</div>
+          </div>
+          <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full rounded-full ${f.finished ? 'bg-blue-500' : (f.running ? 'bg-emerald-500' : 'bg-slate-600')} transition-all duration-300" style="width:${Math.min(100, f.percent)}%"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderFilesContainer(pkgId) {
+      const container = document.getElementById(`filesContainer_${pkgId}`);
+      if (!container) return;
+      const prevScroll = container.scrollTop;
+      container.innerHTML = renderFilesHtml(pkgId);
+      container.scrollTop = prevScroll;
+      // Also requestAnimationFrame in case layout computation takes a frame
+      requestAnimationFrame(() => {
+        if (container && prevScroll > 0) {
+          container.scrollTop = prevScroll;
+        }
+      });
+    }
+
+    async function prioritizePackage(pkgId, e) {
+      if (e) e.stopPropagation();
+      showToast("Updating priority...", false);
+      try {
+        const res = await fetch('/api/downloads/prioritize', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({package_uuid: pkgId, source: 'downloads'})
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          showToast(`✓ Priority set to ${d.priority}!`, false);
+          pollDownloads();
+        } else {
+          showToast("Error updating priority", true);
+        }
+      } catch(e) { showToast("Network error", true); }
+    }
+
+    async function movePackage(pkgId, direction, e) {
+      if (e) e.stopPropagation();
+      try {
+        const res = await fetch('/api/downloads/move', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({package_uuid: pkgId, direction: direction})
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          showToast(direction === 'up' ? "▲ Moved up" : "▼ Moved down", false);
+          pollDownloads();
+        }
+      } catch(e) { showToast("Network error", true); }
+    }
+
+    async function deletePackage(pkgId, source, e) {
+      if (e) e.stopPropagation();
+      if (!confirm("Are you sure you want to delete this package?")) return;
+      showToast("Deleting package...", false);
+      try {
+        const res = await fetch('/api/downloads/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({package_uuid: pkgId, source: source})
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          showToast("✓ Package deleted", false);
+          expandedPackageId = null;
+          if (source === 'linkgrabber') pollLinkgrabber();
+          else pollDownloads();
+        } else {
+          showToast("Error deleting package", true);
+        }
+      } catch(e) { showToast("Network error", true); }
+    }
+
+    function showToast(text, isErr) {
+      const t = document.getElementById('actionToast');
+      t.innerText = text;
+      t.className = isErr
+        ? 'fixed top-16 right-4 z-50 p-3 rounded-xl shadow-2xl text-xs font-medium bg-red-950 border border-red-800 text-red-200 block'
+        : 'fixed top-16 right-4 z-50 p-3 rounded-xl shadow-2xl text-xs font-medium bg-emerald-950 border border-emerald-800 text-emerald-200 block';
+      setTimeout(() => { t.className = 'hidden'; }, 3500);
+    }
+
+    async function pollStatus() {
+      if (isFetchingStatus) return;
+      isFetchingStatus = true;
+      try {
+        const d = await fetch('/api/status').then(r => r.json());
+        const el = document.getElementById('connectionStatus');
+        const speedBadge = document.getElementById('speedBadge');
+        const diskBadge = document.getElementById('diskBadge');
+
+        if (d && d.connected) {
+          el.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span class="text-emerald-400 font-medium">${esc(d.state)}</span>`;
+          speedBadge.classList.remove('hidden');
+          document.getElementById('speedText').innerText = d.speed_formatted;
+
+          if (d.disk) {
+            diskBadge.classList.remove('hidden');
+            document.getElementById('diskFreeText').innerText = d.disk.free_formatted;
+            diskBadge.title = `Free: ${d.disk.free_formatted} | Total: ${d.disk.total_formatted} | Used: ${d.disk.used_formatted} (${d.disk.percent_used}%)`;
+          } else {
+            diskBadge.classList.add('hidden');
+          }
+        } else {
+          el.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span><span class="text-amber-400">Connecting…</span>`;
+          speedBadge.classList.add('hidden');
+          if (d && d.disk) {
+            diskBadge.classList.remove('hidden');
+            document.getElementById('diskFreeText').innerText = d.disk.free_formatted;
+          }
+        }
+      } catch(e) {
+      } finally {
+        isFetchingStatus = false;
+        setTimeout(pollStatus, 4000);
+      }
+    }
+
+    async function pollDownloads() {
+      if (isFetchingDownloads) return;
+      isFetchingDownloads = true;
+      try {
+        let url = `/api/downloads?mode=${currentMode}`;
+        if (only24h) url += '&hours=24';
+
+        const res = await fetch(url);
+        if (res.ok) {
+          const d = await res.json();
+          const list = document.getElementById('downloadsList');
+          const items = d.items || [];
+          document.getElementById('downloadsCountBadge').innerText = items.length;
+
+          // Update Queue & Free Storage Projection in tab
+          const queueSummaryEl = document.getElementById('downloadsQueueSummary');
+          const queueBytesText = document.getElementById('queueBytesText');
+          const queueAfterText = document.getElementById('queueAfterText');
+
+          if (d.queue_info && d.queue_info.queue_remaining_bytes > 0) {
+            const q = d.queue_info;
+            if (queueSummaryEl && queueBytesText && queueAfterText) {
+              queueSummaryEl.classList.remove('hidden');
+              queueBytesText.innerText = q.queue_remaining_formatted;
+              queueAfterText.innerText = q.after_download_free_formatted;
+              if (q.sufficient_space) {
+                queueAfterText.className = "text-emerald-400 font-medium";
+              } else {
+                queueAfterText.className = "text-red-400 font-medium";
+              }
+            }
+          } else {
+            if (queueSummaryEl) queueSummaryEl.classList.add('hidden');
+          }
+
+          if (!items.length) {
+            let msg = 'No active downloads';
+            if (currentMode === 'all') msg = 'No packages found';
+            if (only24h) msg = 'No packages in the last 24 hours';
+            list.innerHTML = `<div class="h-32 flex flex-col items-center justify-center text-slate-600 text-sm">
+              <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              <span>${msg}</span></div>`;
+          } else {
+            const currentScroll = list.scrollTop;
+            const openContainer = openedDownloadsPackageId ? document.getElementById(`filesContainer_${openedDownloadsPackageId}`) : null;
+            const filesScroll = openContainer ? openContainer.scrollTop : 0;
+
+            list.innerHTML = items.map(renderDownloadPackage).join('');
+            list.scrollTop = currentScroll;
+
+            if (openedDownloadsPackageId) {
+              const restoredContainer = document.getElementById(`filesContainer_${openedDownloadsPackageId}`);
+              if (restoredContainer && filesScroll > 0) {
+                restoredContainer.scrollTop = filesScroll;
+              }
+              // Background update of package file progress if open
+              const openItem = items.find(it => String(it.uuid) === String(openedDownloadsPackageId));
+              const itemSource = (openItem && openItem.source) ? openItem.source : 'downloads';
+              fetchPackageFiles(openedDownloadsPackageId, itemSource);
+            }
+          }
+        }
+      } catch(e) {
+      } finally {
+        isFetchingDownloads = false;
+        setTimeout(pollDownloads, 3500);
+      }
+    }
+
+    async function pollLinkgrabber() {
+      if (isFetchingLinkgrabber) return;
+      isFetchingLinkgrabber = true;
+      try {
+        const res = await fetch('/api/linkgrabber');
+        if (res.ok) {
+          const d = await res.json();
+          const list = document.getElementById('linkgrabberList');
+          const items = d.items || [];
+          document.getElementById('linkgrabberCountBadge').innerText = items.length;
+
+          if (!items.length) {
+            list.innerHTML = `<div class="h-32 flex flex-col items-center justify-center text-slate-600 text-sm">
+              <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              <span>Linkgrabber ist leer</span></div>`;
+          } else {
+            const currentScroll = list.scrollTop;
+            const openContainer = openedLinkgrabberPackageId ? document.getElementById(`filesContainer_${openedLinkgrabberPackageId}`) : null;
+            const filesScroll = openContainer ? openContainer.scrollTop : 0;
+
+            list.innerHTML = items.map(renderLinkgrabberPackage).join('');
+            list.scrollTop = currentScroll;
+
+            if (openedLinkgrabberPackageId) {
+              const restoredContainer = document.getElementById(`filesContainer_${openedLinkgrabberPackageId}`);
+              if (restoredContainer && filesScroll > 0) {
+                restoredContainer.scrollTop = filesScroll;
+              }
+              // Dateifortschritt im Hintergrund nachladen
+              fetchPackageFiles(openedLinkgrabberPackageId, 'linkgrabber');
+            }
+          }
+        }
+      } catch(e) {
+      } finally {
+        isFetchingLinkgrabber = false;
+        setTimeout(pollLinkgrabber, 3500);
+      }
+    }
+
+    function renderDownloadPackage(p) {
+      const isGdl = (p.source === 'gallery-dl');
+      const styles = {
+        running:  isGdl
+          ? { border: 'border-cyan-800/60',   bg: 'bg-cyan-950/20',   badge: 'bg-cyan-900/60 text-cyan-300 border-cyan-700/50', bar: 'bg-cyan-500' }
+          : { border: 'border-emerald-800/50', bg: 'bg-emerald-950/20', badge: 'bg-emerald-900/60 text-emerald-300 border-emerald-700/50', bar: 'bg-emerald-500' },
+        crawling: { border: 'border-amber-800/40',   bg: '',                  badge: 'bg-amber-900/40 text-amber-300 border-amber-700/40',       bar: 'bg-amber-400' },
+        error:    { border: 'border-red-800/60',      bg: 'bg-red-950/20',    badge: 'bg-red-900/50 text-red-300 border-red-700/50',             bar: 'bg-red-500' },
+        finished: isGdl
+          ? { border: 'border-cyan-900/40',   bg: 'bg-cyan-950/10',   badge: 'bg-cyan-950/50 text-cyan-300 border-cyan-800/40', bar: 'bg-cyan-600' }
+          : { border: 'border-slate-700/40',    bg: '',                  badge: 'bg-blue-900/30 text-blue-300 border-blue-800/40',           bar: 'bg-blue-500' },
+        queued:   { border: 'border-slate-800',       bg: 'bg-slate-950/50',  badge: 'bg-slate-800 text-slate-400 border-slate-700',             bar: 'bg-slate-600' },
+      };
+      const s = styles[p.category] || styles.queued;
+
+      const total = p.files_total || 0;
+      const done  = p.files_done  || 0;
+      const err   = p.files_error || 0;
+      const gdlPill = isGdl
+        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/60 shrink-0 flex items-center gap-1 shadow-sm" title="Downloader: gallery-dl"><span>📸</span><span>gallery-dl</span></span>`
+        : '';
+      const filePill = total > 1
+        ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 font-mono border border-slate-700 shrink-0">${done}/${total} file${total>1?'s':''}</span>`
+        : '';
+      const errPill = err > 0
+        ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-red-900/60 text-red-300 border border-red-700/50 shrink-0">${err}✕</span>`
+        : '';
+      let prioPill = '';
+      if (p.priority === 'HIGHEST') {
+        prioPill = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-300 border border-red-500/40 shrink-0 flex items-center gap-0.5" title="Priority: HIGHEST">⚡ HIGHEST</span>`;
+      } else if (p.priority === 'HIGH') {
+        prioPill = `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 flex items-center gap-0.5" title="Priority: HIGH">⚡ HIGH</span>`;
+      }
+
+      const prioBtnText = (p.priority === 'HIGH') ? 'Boost: Highest' : (p.priority === 'HIGHEST' ? 'Reset: Normal' : 'Boost: High');
+
+      const speedInfo = p.speed > 0
+        ? `<span class="text-emerald-400 font-semibold">${esc(p.speed_formatted)}</span>`
+        : '';
+      const etaInfo = p.eta > 0
+        ? `<span class="text-slate-400">ETA ${esc(p.eta_formatted)}</span>`
+        : '';
+
+      const isExpanded = (expandedPackageId === p.uuid);
+      const isFilesOpened = (openedDownloadsPackageId === p.uuid);
+
+      return `
+      <div onclick="togglePackageActions('${p.uuid}', event)"
+        class="border ${s.border} ${s.bg} bg-slate-950/60 hover:border-slate-700 cursor-pointer rounded-xl p-3 flex flex-col gap-2 transition select-none">
+        
+        <!-- Header row (Mobile optimized: wraps cleanly in portrait) -->
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 min-w-0">
+          <div class="min-w-0 flex-1 flex items-start gap-1.5 flex-wrap">
+            <span class="font-medium text-sm text-slate-100 break-words line-clamp-2 sm:truncate max-w-full flex-1 min-w-[120px]" title="${esc(p.name)}">${esc(p.name)}</span>
+            <div class="flex items-center gap-1 shrink-0 mt-0.5">
+              ${gdlPill}${prioPill}${filePill}${errPill}
+            </div>
+          </div>
+          <div class="flex items-center justify-between sm:justify-end gap-1.5 shrink-0">
+            <span class="px-2 py-0.5 rounded text-[11px] font-medium border ${s.badge}">${esc(p.status)}</span>
+            <span class="text-slate-500 hover:text-slate-300 p-1 text-xs">
+              ${isExpanded ? '▲' : '▼'}
+            </span>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full h-1.5 rounded-full bg-slate-800/80 overflow-hidden">
+          <div class="h-full rounded-full ${s.bar} transition-all duration-500" style="width:${Math.min(100,p.percent)}%"></div>
+        </div>
+
+        <!-- Info row (Mobile: clean flex wrap) -->
+        <div class="flex items-center justify-between text-xs font-mono text-slate-500 flex-wrap gap-1">
+          <span class="whitespace-nowrap">
+            ${isGdl && p.category === 'running' 
+              ? `${esc(p.bytes_loaded_formatted)} / ${esc(p.bytes_total_formatted)} · ${done}/${total} files <span class="text-cyan-400 font-semibold">(${p.percent}%)</span>` 
+              : `${esc(p.bytes_loaded_formatted)} / ${esc(p.bytes_total_formatted)} <span class="text-slate-600">(${p.percent}%)</span>`}
+          </span>
+          <div class="flex items-center gap-2 shrink-0">${speedInfo}${etaInfo}</div>
+        </div>
+
+        <!-- Pop-out Options: Actions + Show files + Reordering -->
+        ${isExpanded ? `
+        <div class="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 animate-fadeIn" onclick="event.stopPropagation()">
+          <button onclick="togglePackageFiles('${p.uuid}', 'downloads', event)"
+            class="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>${isFilesOpened ? 'Hide files ▲' : 'Show files (' + total + ') ▼'}</span>
+          </button>
+
+          <div class="flex items-center gap-1.5 flex-wrap">
+            ${!isGdl ? `
+            <!-- Manual Move Up / Down Buttons -->
+            <div class="flex items-center rounded-lg border border-slate-700 bg-slate-800 overflow-hidden shadow-sm">
+              <button onclick="movePackage('${p.uuid}', 'up', event)" title="Move up 1 position"
+                class="px-2 py-1.5 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center">
+                ▲
+              </button>
+              <div class="w-px h-4 bg-slate-700"></div>
+              <button onclick="movePackage('${p.uuid}', 'down', event)" title="Move down 1 position"
+                class="px-2 py-1.5 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center">
+                ▼
+              </button>
+            </div>
+
+            <!-- Priority cycle button -->
+            <button onclick="prioritizePackage('${p.uuid}', event)"
+              title="Click to cycle: Default -> High -> Highest"
+              class="px-2.5 py-1.5 rounded-lg bg-emerald-700/80 hover:bg-emerald-600 text-white text-xs font-medium transition flex items-center gap-1 shadow-sm">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span>${prioBtnText}</span>
+            </button>
+
+            <!-- Filter videos only in package -->
+            <button onclick="filterVideosInQueue('${p.uuid}', 'downloads', event)"
+              title="Remove all non-video files from this package"
+              class="px-2.5 py-1.5 rounded-lg border border-purple-800/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 text-xs font-medium transition flex items-center gap-1 shadow-sm">
+              <span>🎬 Videos only</span>
+            </button>` : ''}
+
+            <!-- Delete button -->
+            <button onclick="deletePackage('${p.uuid}', '${isGdl ? 'gallery-dl' : 'downloads'}', event)"
+              class="px-2 py-1.5 rounded-lg bg-red-900/60 hover:bg-red-800 text-red-200 border border-red-800/60 text-xs font-medium transition flex items-center gap-1 shadow-sm" title="Delete package">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>` : ''}
+
+        <!-- Second Level: Nested Files View -->
+        ${isFilesOpened ? `
+        <div class="pt-2 border-t border-slate-800/80" onclick="event.stopPropagation()">
+          <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-800/60">
+            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Contained files:</span>
+            <button onclick="fetchPackageFiles('${p.uuid}', '${isGdl ? 'gallery-dl' : 'downloads'}')" class="text-[11px] text-slate-500 hover:text-slate-300 flex items-center gap-1 transition">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+          <div id="filesContainer_${p.uuid}" class="space-y-1.5 max-h-72 overflow-y-auto pr-1 scroll-touch overscroll-contain pb-2">
+            ${renderFilesHtml(p.uuid)}
+          </div>
+        </div>` : ''}
+
+        ${p.is_error ? `
+        <div class="px-2.5 py-1.5 rounded-lg bg-red-950/60 border border-red-800/70 text-xs text-red-200 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>${esc(p.status)}</span>
+        </div>` : ''}
+      </div>`;
+    }
+
+    function renderLinkgrabberPackage(p) {
+      const isGdl = (p.source === 'gallery-dl');
+      const total = p.files_total || 1;
+      const savePath = p.save_to || '/output';
+      const borderClass = isGdl ? 'border-cyan-800/60 bg-cyan-950/20' : 'border-slate-800 bg-slate-950/60';
+      const gdlPill = isGdl
+        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/60 shrink-0 flex items-center gap-1 shadow-sm" title="Downloader: gallery-dl"><span>📸</span><span>gallery-dl</span></span>`
+        : '';
+      const crawlPill = (isGdl && p.crawling)
+        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-900/60 text-amber-300 border border-amber-700/50 shrink-0 animate-pulse flex items-center gap-1"><span>🔄</span><span>Scanning</span></span>`
+        : '';
+
+      return `
+      <div class="border ${borderClass} hover:border-slate-700 rounded-xl p-3 flex flex-col gap-2.5 transition">
+        <div class="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+          <div class="min-w-0 flex-1 flex flex-col gap-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-medium text-sm text-slate-100 truncate" title="${esc(p.name)}">${esc(p.name)}</span>
+              ${gdlPill}
+              ${crawlPill}
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 font-mono border border-slate-700 shrink-0">${total} file${total>1?'s':''}</span>
+            </div>
+            <div class="text-xs text-slate-500 font-mono flex items-center gap-2 flex-wrap">
+              <span>Size: ${esc(p.bytes_total_formatted)}</span>
+              <span>·</span>
+              <span class="${p.crawling ? 'text-amber-400 font-medium' : 'text-slate-400'}">${esc(p.status)}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 ml-auto flex-wrap justify-end">
+            ${!isGdl ? `
+            <label class="flex items-center space-x-1.5 text-xs text-slate-400 cursor-pointer select-none bg-slate-900 border border-slate-800 hover:border-slate-700 px-2 py-1.5 rounded-lg transition" title="Attempts to download links even if marked offline">
+              <input type="checkbox" id="chkOffline_${p.uuid}" class="rounded border-slate-700 bg-slate-800 text-amber-500 h-3.5 w-3.5 focus:ring-amber-500/40">
+              <span class="text-[11px]">Force offline</span>
+            </label>` : ''}
+
+            <button onclick="filterVideosInQueue('${p.uuid}', 'linkgrabber', event)"
+              title="Filter this package: Remove all non-video files"
+              class="px-2.5 py-1.5 rounded-lg border border-purple-800/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 text-xs font-medium transition flex items-center gap-1 shadow-sm">
+              <span>🎬 Videos only</span>
+            </button>
+
+            <button onclick="downloadSingleLinkgrabber('${p.uuid}')"
+              class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              <span>Download</span>
+            </button>
+
+            <button onclick="deletePackage('${p.uuid}', 'linkgrabber', event)"
+              title="Delete"
+              class="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/60 text-slate-400 hover:text-red-300 border border-slate-700 transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Download Path display -->
+        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-1.5 min-w-0 text-slate-400">
+            <svg class="w-3.5 h-3.5 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            <span class="text-slate-500 shrink-0">Path:</span>
+            <span id="saveToText_${p.uuid}" class="font-mono text-[11px] text-slate-300 truncate" title="${esc(savePath)}">${esc(savePath)}</span>
+          </div>
+          <button onclick="openDirModal('${p.uuid}', '${esc(p.name).replace(/'/g, "\\'")}', '${esc(savePath).replace(/'/g, "\\'")}')"
+            class="px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs text-emerald-400 hover:text-emerald-300 shrink-0 font-medium transition flex items-center gap-1 border border-slate-700">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            <span>Change</span>
+          </button>
+        </div>
+
+        <!-- Dateiliste aufklappen Button -->
+        <div class="pt-1.5 flex items-center justify-between">
+          <button onclick="togglePackageFiles('${p.uuid}', 'linkgrabber', event)"
+            class="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>${(openedLinkgrabberPackageId === p.uuid) ? 'Hide files ▲' : 'Show files (' + total + ') ▼'}</span>
+          </button>
+        </div>
+
+        <!-- Nested Files View in Linkgrabber -->
+        ${(openedLinkgrabberPackageId === p.uuid) ? `
+        <div class="pt-2 border-t border-slate-800/80" onclick="event.stopPropagation()">
+          <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-800/60">
+            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Found files:</span>
+            <button onclick="fetchPackageFiles('${p.uuid}', 'linkgrabber')" class="text-[11px] text-slate-500 hover:text-slate-300 flex items-center gap-1 transition">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+          <div id="filesContainer_${p.uuid}" class="space-y-1.5 max-h-72 overflow-y-auto pr-1 scroll-touch overscroll-contain pb-2">
+            ${renderFilesHtml(p.uuid)}
+          </div>
+        </div>` : ''}
+      </div>`;
+    }
+
+    async function downloadSingleLinkgrabber(pkgId) {
+      const chk = document.getElementById('chkOffline_' + pkgId);
+      const forceOffline = chk ? chk.checked : false;
+
+      try {
+        const res = await fetch('/api/linkgrabber/download', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({package_ids: [pkgId], download_all: false, force_offline: forceOffline})
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          showToast("✓ " + d.message, false);
+          pollLinkgrabber();
+          pollDownloads();
+        } else {
+          showToast("Error: " + (d.detail || d.message), true);
+        }
+      } catch(e) { showToast("Network error", true); }
+    }
+
+    async function downloadAllLinkgrabber() {
+      try {
+        const res = await fetch('/api/linkgrabber/download', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({download_all: true, force_offline: false})
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          showToast("✓ All packages started!", false);
+          pollLinkgrabber();
+          pollDownloads();
+        } else {
+          showToast("Error: " + (d.detail || d.message), true);
+        }
+      } catch(e) { showToast("Network error", true); }
+    }
+
+    async function loadFolders() {
+      try {
+        const res = await fetch('/api/folders');
+        if (res.ok) {
+          const d = await res.json();
+          availableFolders = d.folders || [];
+          const dl = document.getElementById('folderSuggestions');
+          if (dl) {
+            dl.innerHTML = availableFolders.map(f => `<option value="${esc(f)}"></option>`).join('');
+          }
+        }
+      } catch(e) {}
+    }
+
+    async function promptCreateFolder(targetInputId) {
+      const folderName = prompt("Enter new folder name (will be created in /output):");
+      if (!folderName || !folderName.trim()) return;
+
+      const cleanName = folderName.trim();
+      try {
+        const res = await fetch('/api/folders/create', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name: cleanName})
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          showToast("✓ Folder '" + d.name + "' created", false);
+          await loadFolders();
+          const inp = document.getElementById(targetInputId);
+          if (inp) {
+            inp.value = d.name;
+          }
+        } else {
+          showToast("Error: " + (d.detail || d.message), true);
+        }
+      } catch (e) {
+        showToast("Network error while creating folder", true);
+      }
+    }
+
+    let modalTargetPkgId = null;
+
+    function openDirModal(pkgId, pkgName, currentPath) {
+      modalTargetPkgId = pkgId;
+      document.getElementById('dirModalPackageName').innerText = pkgName;
+      const inp = document.getElementById('dirModalInput');
+      inp.value = currentPath || '/output';
+      document.getElementById('dirModal').classList.remove('hidden');
+      setTimeout(() => {
+        inp.focus();
+        inp.select();
+      }, 50);
+    }
+
+    function closeDirModal() {
+      modalTargetPkgId = null;
+      document.getElementById('dirModal').classList.add('hidden');
+    }
+
+    async function saveDirModal() {
+      if (!modalTargetPkgId) return;
+      const inp = document.getElementById('dirModalInput');
+      const directory = inp.value.trim();
+      if (!directory) {
+        showToast("Path cannot be empty", true);
+        return;
+      }
+
+      const pkgId = modalTargetPkgId;
+      try {
+        const res = await fetch('/api/linkgrabber/set-directory', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({package_uuid: Number(pkgId), directory})
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          showToast("✓ " + d.message, false);
+          closeDirModal();
+          pollLinkgrabber();
+        } else {
+          showToast("Error: " + (d.detail || d.message), true);
+        }
+      } catch(e) {
+        showToast("Network error", true);
+      }
+    }
+
+    async function submitLinks() {
+      const ta = document.getElementById('linksInput');
+      const destInput = document.getElementById('addDestinationFolder');
+      const autostart = document.getElementById('chkAutostart').checked;
+      const links = ta.value.trim();
+      const destinationFolder = destInput ? destInput.value.trim() : '';
+
+      if (!links) { showFeedback('Please paste links.', true); return; }
+
+      try {
+        const videos_only = document.getElementById('chkVideosOnly') ? document.getElementById('chkVideosOnly').checked : false;
+        const payload = {links, autostart, videos_only};
+        if (destinationFolder) {
+          payload.destination_folder = destinationFolder;
+        }
+
+        const res = await fetch('/api/links', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          showFeedback('✓ ' + d.message, false);
+          ta.value = '';
+          if (destInput) destInput.value = '';
+          setTimeout(() => {
+            if (autostart) {
+              switchTab('downloads');
+            } else {
+              switchTab('linkgrabber');
+            }
+          }, 800);
+        } else {
+          showFeedback('Error: ' + (d.detail || 'Unknown error'), true);
+        }
+      } catch(e) { showFeedback('Network error: ' + e.message, true); }
+    }
+
+    async function filterVideosInQueue(pkgId, source, e) {
+      if (e) e.stopPropagation();
+      const targetDesc = pkgId ? "this package" : (source === 'linkgrabber' ? "all Linkgrabber packages" : "the active download queue");
+      if (!confirm(`Do you want to remove all non-video files (images, text, etc.) from ${targetDesc}?`)) {
+        return;
+      }
+      showToast("Filtering non-video files...", false);
+      try {
+        const res = await fetch('/api/filter-videos', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({package_uuid: pkgId, source: source})
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          showToast(`✓ Removed ${d.removed_count} non-video file(s)!`, false);
+          if (source === 'downloads') pollDownloads();
+          else pollLinkgrabber();
+        } else {
+          showToast("Error filtering videos: " + (d.detail || d.message), true);
+        }
+      } catch(err) {
+        showToast("Network error", true);
+      }
+    }
+
+    function showFeedback(text, isErr) {
+      const m = document.getElementById('submitMessage');
+      m.innerText = text;
+      m.className = isErr
+        ? 'mt-3 p-2.5 rounded-lg text-xs font-medium bg-red-950 border border-red-800 text-red-300 block'
+        : 'mt-3 p-2.5 rounded-lg text-xs font-medium bg-emerald-950 border border-emerald-800 text-emerald-300 block';
+      setTimeout(() => { m.className = 'hidden mt-3 p-2.5 rounded-lg text-xs font-medium'; }, 5000);
+    }
+
+    async function togglePause() {
+      const action = isPaused ? 'resume' : 'pause';
+      try {
+        const res = await fetch('/api/control', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({action})
+        });
+        if (res.ok) {
+          isPaused = !isPaused;
+          document.getElementById('pauseIcon').innerText = isPaused ? '▶' : '⏸';
+          document.getElementById('pauseText').innerText = isPaused ? 'Resume' : 'Pause';
+        }
+      } catch(e) {}
+    }
+
+    function esc(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    loadFolders();
+    pollStatus();
+    pollDownloads();
+    pollLinkgrabber();
+  </script>
+</body>
+</html>
