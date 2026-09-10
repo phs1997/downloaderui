@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora WebUI · JDownloader + gallery-dl</title>
+<style>
+  :root{
+    --lav:#c4a7e7; --lav-deep:#9b7ed0; --lav-soft:#f3ebfc;
+    --rose:#f7c8d8; --rose-soft:#fdeef4;
+    --mint:#a7e2d5; --mint-deep:#57c5ae; --mint-soft:#eafaf5;
+    --blue:#b8d8f0; --blue-deep:#6ba6d9;
+    --peach:#fde3c8; --peach-soft:#fff5ea;
+    --ink:#5a4f73; --ink-soft:#8a82a3;
+    --cream:#fbf7ff; --card:#ffffff;
+    --line:#eedff7;
+    --shadow:0 10px 30px -12px rgba(155,126,208,.35);
+    --shadow-sm:0 4px 14px -8px rgba(155,126,208,.3);
+    --radius:18px;
+    --grad:linear-gradient(120deg,#e8d8f7 0%, #fbd7e6 30%, #cdeef7 65%, #d6f6ec 100%);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #f3e7fb 0%, transparent 60%),
+      radial-gradient(1100px 600px at 110% 0%, #dbf3f6 0%, transparent 55%),
+      radial-gradient(1000px 700px at 50% 120%, #fde7ef 0%, transparent 55%),
+      var(--cream);
+    padding:18px;
+  }
+  .wrap{max-width:1100px;margin:0 auto}
+
+  /* Header */
+  header.hero{
+    background:var(--grad);
+    border-radius:26px; padding:22px 26px;
+    box-shadow:var(--shadow);
+    display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between;
+  }
+  .brand{display:flex; align-items:center; gap:14px; flex:1 1 260px}
+  .logo{
+    width:52px;height:52px;border-radius:16px;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--lav-deep),var(--mint-deep));
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;
+    box-shadow:var(--shadow-sm);
+  }
+  .brand h1{margin:0;font-size:1.35rem;letter-spacing:.3px;color:#6d5a94}
+  .brand p{margin:2px 0 0;font-size:.82rem;color:var(--ink-soft)}
+  .stats{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+  .stat{
+    background:rgba(255,255,255,.75); backdrop-filter:blur(4px);
+    border-radius:14px; padding:8px 14px; min-width:110px;
+    box-shadow:var(--shadow-sm); border:1px solid #fff
+  }
+  .stat .k{font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft)}
+  .stat .v{font-size:1rem;font-weight:700;margin-top:2px;display:flex;align-items:center;gap:6px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .dot.on{background:#4bd1a4;box-shadow:0 0 0 4px rgba(75,209,164,.22)}
+  .dot.off{background:#d8d2de;box-shadow:0 0 0 4px rgba(200,196,210,.2)}
+  .btn{
+    border:none;cursor:pointer;border-radius:12px;font-weight:600;font-size:.85rem;
+    padding:9px 14px; transition:transform .12s ease, box-shadow .12s ease, background .15s;
+    background:#fff; color:var(--ink); box-shadow:var(--shadow-sm);
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn.primary{background:linear-gradient(135deg,var(--lav-deep),var(--blue-deep));color:#fff}
+  .btn.gdl{background:linear-gradient(135deg,#b48fe0,#e5a3f0);color:#fff}
+  .btn.jd{background:linear-gradient(135deg,#4fc3a1,#63b3ed);color:#fff}
+  .btn.warn{background:linear-gradient(135deg,#f7a8c0,#ed7ba4);color:#fff}
+  .btn.ghost{background:rgba(255,255,255,.8)}
+
+  /* Sections */
+  section.card{
+    background:var(--card); border-radius:22px; padding:20px 22px; margin-top:18px;
+    box-shadow:var(--shadow); border:1px solid var(--line);
+  }
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .bar h2{margin:0;font-size:1.05rem;color:#6d5a94;display:flex;align-items:center;gap:8px}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  /* Toggle chips */
+  .seg{display:inline-flex;background:var(--lav-soft);border-radius:12px;padding:3px;gap:3px}
+  .seg button{border:none;background:transparent;padding:7px 14px;border-radius:9px;cursor:pointer;font-weight:600;color:var(--ink-soft);font-size:.82rem}
+  .seg button.active{background:#fff;color:var(--lav-deep);box-shadow:var(--shadow-sm)}
+
+  /* Progress */
+  .track{height:10px;border-radius:8px;background:#f1e8fb;overflow:hidden;position:relative}
+  .fill{height:100%;border-radius:8px;transition:width .6s ease;
+    background:linear-gradient(90deg,var(--lav-deep),var(--blue),var(--mint-deep))}
+  .fill.err{background:linear-gradient(90deg,#f7a8c0,#ed7ba4)}
+
+  /* Download item */
+  .item{
+    border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin-bottom:12px;
+    background:#fffdfe; box-shadow:var(--shadow-sm);
+  }
+  .item.running{border-color:#bfe6d8; background:var(--mint-soft)}
+  .item.err{border-color:#f3cfdc; background:var(--rose-soft)}
+  .item .row1{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+  .pname{font-weight:700;font-size:.95rem;color:var(--ink);word-break:break-word;flex:1 1 220px}
+  .meta{font-size:.78rem;color:var(--ink-soft);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{font-size:.66rem;font-weight:800;letter-spacing:.4px;border-radius:9px;padding:3px 9px;color:#fff;text-transform:uppercase}
+  .chip.gdl{background:linear-gradient(135deg,#a98ad9,#e29fec)}
+  .chip.jd{background:linear-gradient(135deg,#38b392,#52a7e8)}
+  .chip.prio{background:var(--peach);color:#c47b2e}
+  .sub{font-size:.72rem;color:var(--ink-soft);margin-top:5px}
+  .actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .small{padding:6px 10px;font-size:.75rem;border-radius:10px}
+  .expand{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+  .files{list-style:none;margin:8px 0 0;padding:0;max-height:190px;overflow:auto}
+  .files li{font-size:.76rem;padding:5px 8px;border-radius:9px;margin-bottom:4px;background:#faf7ff}
+  .files li.fin{color:#4a8f78}
+  .files li.run{color:var(--lav-deep);background:var(--lav-soft)}
+  .files li.err{color:#c2607f;background:var(--rose-soft)}
+  .fline{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+  .fbar{flex:1;min-width:120px;height:5px;border-radius:4px;background:#f0e6fb}
+
+  /* Linkgrabber */
+  .lg-item{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:#fffdfe}
+  .lg-item .row1{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;align-items:center}
+  .crawling{color:var(--lav-deep);font-weight:600}
+
+  /* Add form */
+  .grid{display:grid;grid-template-columns:1fr 300px;gap:14px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  textarea{
+    width:100%;min-height:100px;border:1.5px solid var(--line);border-radius:14px;padding:12px;
+    font:inherit;background:#fcfaff;color:var(--ink);resize:vertical
+  }
+  textarea:focus{outline:none;border-color:var(--lav-deep);background:#fff}
+  input[type=text],select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px;font:inherit;background:#fcfaff;color:var(--ink)}
+  input:focus,select:focus{outline:none;border-color:var(--lav-deep);background:#fff}
+  label.ck{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--ink);margin:10px 0;cursor:pointer}
+  label.ck input{width:17px;height:17px;accent-color:var(--lav-deep)}
+  .field{margin:10px 0}
+  .field>span{font-size:.72rem;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+  .hint{font-size:.72rem;color:var(--ink-soft);margin-top:6px}
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99;
+    background:#fff;border-radius:14px;padding:11px 18px;box-shadow:var(--shadow);
+    border:1px solid var(--line);font-size:.84rem;font-weight:600;display:none;max-width:90vw;text-align:center
+  }
+  .toast.ok{border-color:#bfe6d8;color:#2f8f72;background:var(--mint-soft)}
+  .toast.err{border-color:#f3cfdc;color:#c2607f;background:var(--rose-soft)}
+  .empty{text-align:center;color:var(--ink-soft);font-size:.85rem;padding:22px 0}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--lav-deep);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.74rem;color:var(--ink-soft);align-items:center}
+  .legend .chip{cursor:default}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <h1>Aurora WebUI</h1>
+        <p>JDownloader &amp; gallery-dl · Einheitliches Download-Cockpit</p>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Verbindung</div><div class="v"><span class="dot" id="connDot"></span><span id="connText">…</span></div></div>
+      <div class="stat"><div class="k">Download</div><div class="v" id="speedText">0 B/s</div></div>
+      <div class="stat"><div class="k">Freier Speicher</div><div class="v" id="diskText">–</div></div>
+      <div class="stat">
+        <div class="k">Steuerung</div>
+        <div class="v" style="gap:6px">
+          <button class="btn primary small" id="btnTogglePause" title="Pause / Weiter">⏸ Pause</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Downloads -->
+  <section class="card">
+    <div class="bar">
+      <h2>⬇ Downloads <span class="legend">
+        <span class="chip gdl">gallery-dl</span><span class="chip jd">JD</span>
+      </span></h2>
+      <div class="toolbar">
+        <div class="seg" id="segMode">
+          <button data-mode="active" class="active">Aktiv</button>
+          <button data-mode="all">Alle</button>
+        </div>
+        <select id="hoursSel">
+          <option value="">Zeitfenster: egal</option>
+          <option value="24">letzte 24 h</option>
+          <option value="7">letzte 7 Tage</option>
+          <option value="168">letzte Woche (168 h)</option>
+        </select>
+        <button class="btn ghost small" id="btnRefresh">⟳ Aktualisieren</button>
+      </div>
+    </div>
+    <div id="downloadsList"></div>
+  </section>
+
+  <!-- Linkgrabber -->
+  <section class="card">
+    <div class="bar">
+      <h2>🔗 Linkgrabber</h2>
+      <div class="toolbar">
+        <label class="ck" style="margin:0">
+          <input type="checkbox" id="forceOffline"> Force Offline
+        </label>
+        <button class="btn primary small" id="btnLGAll">⬇ Alle downloaden</button>
+      </div>
+    </div>
+    <div id="linkgrabberList"></div>
+  </section>
+
+  <!-- Add -->
+  <section class="card">
+    <div class="bar"><h2>➕ Links hinzufügen</h2></div>
+    <div class="grid">
+      <div>
+        <textarea id="linksInput" placeholder="Links, zeilenweise oder durch Leerzeichen getrennt …&#10;https://example.com/gallery/1&#10;https://example.com/album (JD)"></textarea>
+        <div class="hint">gallery-dl-fähige Quellen (Pixiv, Twitter/X, DeviantArt, Tumblr u.&nbsp;a.) werden automatisch an gallery-dl geleitet, der Rest an JDownloader.</div>
+        <label class="ck"><input type="checkbox" id="autostart"> Autostart (sofort downloaden)</label>
+        <label class="ck"><input type="checkbox" id="videosOnly"> Nur Videos</label>
+        <button class="btn primary" id="btnAdd">＋ Links hinzufügen</button>
+      </div>
+      <div>
+        <div class="field">
+          <span>Zielordner</span>
+          <input type="text" id="destDir" list="foldersList" placeholder="Standard / neuer Ordner …">
+          <datalist id="foldersList"></datalist>
+        </div>
+        <div class="field">
+          <span>Neuen Ordner anlegen</span>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="newFolderName" placeholder="Ordner-Name">
+            <button class="btn ghost" id="btnNewFolder" title="Ordner anlegen">＋</button>
+          </div>
+        </div>
+        <div class="hint" id="foldersHint">Ordner werden aus /api/folders geladen …</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+"use strict";
+/* ============ XSS-sichere Escaping-Helfer ============ */
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function pct(p){ p=Number(p)||0; return Math.max(0,Math.min(100,p)); }
+
+/* ============ State & Konfiguration ============ */
+const state = {
+  mode:"active",
+  hours: "",
+  status:{connected:false, state:"OFFLINE", speed_formatted:"0 B/s"},
+  downloads:[],
+  linkgrabber:[],
+  expanded:{},   // uuid -> true setzen
+  loadedFiles:{} // uuid -> {source, files}
+};
+let statusTimer=null, dlTimer=null, lgTimer=null;
+const DL_INTERVAL = 4000, LG_INTERVAL = 3500;
+let lastToggleState = null;
+
+/* ============ HTTP ============ */
+async function api(path, opts){
+  try{
+    const res = await fetch(path, opts);
+    if(res.status === 204) return null;
+    const j = await res.json().catch(()=>({}));
+    if(!res.ok){ throw new Error((j&&j.detail)||("HTTP "+res.status)); }
+    return j;
+  }catch(e){ throw e; }
+}
+async function post(path, body){
+  return api(path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body||{})});
+}
+
+/* ============ Toast / Feedback ============ */
+let toastTimer=null;
+function toast(msg, ok){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.className="toast "+(ok?"ok":"err");
+  t.style.display="block";
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ t.style.display="none"; }, 3200);
+}
+async function runAction(label, fn){
+  try{ const r = await fn(); toast(label, true); return r; }
+  catch(e){ toast("Fehler: "+esc(e.message), false); }
+}
+
+/* ============ Status ============ */
+async function loadStatus(){
+  try{
+    const s = await api("/api/status");
+    state.status = s;
+    const dot=document.getElementById("connDot");
+    const conn=document.getElementById("connText");
+    if(s.connected){
+      dot.className="dot on"; conn.textContent = (s.state||"ONLINE").replace("_"," ");
+    }else{
+      dot.className="dot off"; conn.textContent="Offline";
+    }
+    document.getElementById("speedText").textContent = s.speed_formatted||"0 B/s";
+    const d=s.disk||{};
+    document.getElementById("diskText").textContent =
+      d.free_formatted+" / "+(d.total_formatted||"");
+    // Pause/Resume-Button
+    const btn=document.getElementById("btnTogglePause");
+    const downloading = s.connected && s.downloading;
+    const current = downloading ? "pause" : (s.connected?"resume":"off");
+    if(current!==lastToggleState){
+      lastToggleState=current;
+      btn.disabled = !s.connected;
+      if(current==="pause"){ btn.textContent="⏸ Pause"; btn.classList.add("primary"); }
+      else if(current==="resume"){ btn.textContent="▶ Weiter"; btn.classList.add("primary"); }
+      else { btn.textContent="–"; btn.classList.remove("primary"); }
+    }
+    return s;
+  }catch(e){
+    toast("Status nicht erreichbar: "+esc(e.message), false);
+  }
+}
+async function togglePause(){
+  const s=state.status;
+  if(!s.connected) return;
+  const action = s.downloading ? "pause" : "resume";
+  await runAction("Steuerung: "+action, ()=>post("/api/control",{action}));
+  setTimeout(loadStatus, 1500);
+}
+
+/* ============ Downloads ============ */
+async function loadDownloads(){
+  try{
+    const q = "?mode="+encodeURIComponent(state.mode)+(state.hours?("&hours="+encodeURIComponent(state.hours)):"");
+    const d = await api("/api/downloads"+q);
+    state.downloads = d.items||[];
+    renderDownloads(d.queue_info);
+    return d;
+  }catch(e){ toast("Downloads-Fehler: "+esc(e.message), false); }
+}
+
+function srcInfo(u,source){
+  const isGdl = String(u||"").startsWith("gdl_") || source==="gallery-dl";
+  return { isGdl, chip: isGdl ? '<span class="chip gdl">gallery-dl</span>' : '<span class="chip jd">JD</span>',
+           src: isGdl ? "gallery-dl" : "downloads" };
+}
+
+function renderDownloads(queue_info){
+  const list=document.getElementById("downloadsList");
+  const items=state.downloads;
+  if(!items.length){ list.innerHTML='<div class="empty">Keine Downloads im gewählten Bereich.</div>'; return; }
+  list.innerHTML = items.map(pkg=>{
+    const {isGdl,chip,src}=srcInfo(pkg.uuid,pkg.source);
+    const running = pkg.category==="running" || pkg.category==="crawling";
+    const err = pkg.is_error || pkg.category==="error";
+    const catClass = running?"running":(err?"err":"");
+    const pr = pct(pkg.percent);
+    const prioBadge = pkg.is_prioritized ? '<span class="chip prio">PRIO</span>' : (pkg.priority&&pkg.priority!=="DEFAULT" ? '<span class="chip prio">'+esc(pkg.priority)+'</span>' : "");
+    const filesTxt = pkg.files_total!=null ? (pkg.files_done||0)+" / "+pkg.files_total+" Dateien" : "";
+    const speed = running ? " · "+esc(pkg.speed_formatted||"") : "";
+    const eta = (pkg.eta_formatted && pkg.eta_formatted!=="—" && pkg.eta_formatted!=="–") ? " · Rest "+esc(pkg.eta_formatted) : "";
+    const isExpanded = !!state.expanded[pkg.uuid];
+
+    // actions per source
+    let actions="";
+    if(isGdl){
+      actions += `<button class="btn small${pkg.category==='crawling'?' gdl':''}" data-act="retry" data-uuid="${esc(pkg.uuid)}">↺ Retry</button>`;
+      actions += `<button class="btn warn small" data-act="delete" data-uuid="${esc(pkg.uuid)}" data-src="gallery-dl">🗑</button>`;
+    }else{
+      actions += `<button class="btn small ghost" data-act="prio" data-uuid="${esc(pkg.uuid)}" ${pkg.is_prioritized?'disabled':''}>↑ Prio</button>`;
+      actions += `<button class="btn small ghost" data-act="move" data-uuid="${esc(pkg.uuid)}" data-dir="up">↑</button>`;
+      actions += `<button class="btn small ghost" data-act="move" data-uuid="${esc(pkg.uuid)}" data-dir="down">↓</button>`;
+      actions += `<button class="btn warn small" data-act="delete" data-uuid="${esc(pkg.uuid)}" data-src="downloads">🗑</button>`;
+    }
+    if(pkg.files_total>0 && src!=="linkgrabber"){
+      actions += `<button class="btn ghost small" data-act="expand" data-uuid="${esc(pkg.uuid)}" data-src="${src}">${isExpanded?"▾":"▸"} Dateien</button>`;
+    }
+
+    const filesRow = isExpanded ? `<div class="expand" id="files-${esc(pkg.uuid)}"><span class="spinner" style="margin-left:6px"></span></div>` : "";
+
+    return `<div class="item ${catClass}">
+      <div class="row1">
+        <div style="flex:1;min-width:150px">
+          <div class="pname">${chip} ${esc(pkg.name)} ${prioBadge}</div>
+          <div class="meta">
+            <span class="badge" style="font-weight:700">${esc(pkg.category||"")}</span>
+            <span>${esc(pkg.status||"")}</span>
+          </div>
+          <div class="sub">
+            ${esc(pkg.bytes_loaded_formatted||"")} / ${esc(pkg.bytes_total_formatted||"")}${speed}${eta}${filesTxt?" · "+filesTxt:""}
+          </div>
+        </div>
+        <div class="actions">${actions}</div>
+      </div>
+      <div class="track ${err?'err':''}" style="margin-top:10px"><div class="fill ${err?'err':''}" style="width:${pr}%"></div></div>
+      <div style="text-align:right;font-size:.72rem;color:var(--ink-soft);margin-top:3px">${pr.toFixed(1)}%</div>
+      ${filesRow}
+    </div>`;
+  }).join("");
+
+  }
+
+async function loadFiles(pkg){
+  const {src}=srcInfo(pkg.uuid,pkg.source);
+  const key=pkg.uuid;
+  try{
+    const d=await api("/api/downloads/files?package_uuid="+encodeURIComponent(key)+"&source="+encodeURIComponent(src));
+    state.loadedFiles[key] = d.files||[];
+  }catch(e){
+    state.loadedFiles[key]=[];
+  }
+  const box=document.getElementById("files-"+CSS.escape(String(key)));
+  if(!box) return;
+  const files=state.loadedFiles[key]||[];
+  if(!files.length){ box.innerHTML='<div class="hint">Keine Dateidetails verfügbar.</div>'; return; }
+  let ul="<ul class=\"files\">";
+  files.forEach(f=>{
+    const fin=f.finished, run=f.running, er=f.status?/error|offline|failed/i.test(f.status):false;
+    let cls=fin?"fin":(er?"err":(run?"run":""));
+    const fp=pct(f.percent);
+    let right=esc(f.status||"");
+    if(f.bytes_loaded_formatted) right=esc(f.bytes_loaded_formatted+" / "+(f.bytes_total_formatted||""))+(f.speed_formatted?(" · "+esc(f.speed_formatted)):"");;
+    ul+=`<li class="${cls}">
+      <div class="fline"><span style="flex:1;word-break:break-word">${esc(f.name)}</span><span class="hint">${right}</span></div>
+      <div class="fbar"><div class="fill" style="width:${fp}%"></div></div>
+    </li>`;
+  });
+  ul+="</ul>";
+  box.innerHTML=ul;
+}
+
+/* ============ Linkgrabber ============ */
+async function loadLinkgrabber(){
+  try{
+    const d=await api("/api/linkgrabber");
+    state.linkgrabber=d.items||[];
+    renderLinkgrabber();
+  }catch(e){ toast("Linkgrabber-Fehler: "+esc(e.message), false); }
+}
+
+function renderLinkgrabber(){
+  const list=document.getElementById("linkgrabberList");
+  const items=state.linkgrabber;
+  if(!items.length){ list.innerHTML='<div class="empty">Linkgrabber ist leer.</div>'; return; }
+  list.innerHTML=items.map(p=>{
+    const {isGdl,chip,src}=srcInfo(p.uuid,p.source);
+    const cra=p.crawling;
+    const pr=pct(p.bytes_total? 0: 0);
+    return `<div class="lg-item">
+      <div class="row1">
+        <div style="flex:1;min-width:150px">
+          <div class="pname">${chip} ${esc(p.name)}</div>
+          <div class="meta">
+            ${cra?'<span class="crawling">⏳ Crawling…</span>':('· '+esc(p.category||"queued"))}
+            ${p.is_error?'<span style="color:#c2607f">⚠ Fehler</span>':''}
+            · ${esc(p.status||p.save_to||"")}
+          </div>
+          <div class="sub">${esc(p.bytes_total_formatted||"")}${p.files_total!=null?(" · "+p.files_total+" Dateien"):""}${p.save_to?(" · ▸ "+esc(p.save_to)):""}</div>
+        </div>
+        <div class="actions">
+          ${cra?'':`<button class="btn small jd" data-act="lgsingle" data-uuid="${esc(p.uuid)}">Ja, downloaden</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ============ Ordner ============ */
+async function loadFolders(){
+  try{
+    const d=await api("/api/folders");
+    const arr = Array.isArray(d)?d:(d.folders||[]);
+    const dl=document.getElementById("foldersList");
+    dl.innerHTML=arr.map(f=>`<option value="${esc(typeof f==="string"?f:(f.name||f.path||f))}">`).join("");
+    document.getElementById("foldersHint").textContent = arr.length+" Ordner verfügbar.";
+  }catch(e){
+    document.getElementById("foldersHint").textContent="Ordner konnten nicht geladen werden.";
+  }
+}
+async function newFolder(){
+  const n=document.getElementById("newFolderName").value.trim();
+  if(!n){ toast("Bitte Ordnernamen eingeben.", false); return; }
+  await runAction("Ordner angelegt", ()=>post("/api/folders/create",{name:n}));
+  document.getElementById("newFolderName").value="";
+  loadFolders();
+}
+
+/* ============ Hinzufügen ============ */
+async function addLinks(){
+  const raw=document.getElementById("linksInput").value.trim();
+  if(!raw){ toast("Bitte Links eingeben.", false); return; }
+  const links=raw.split(/\s+/).filter(Boolean);
+  const body={
+    links,
+    autostart: document.getElementById("autostart").checked,
+    videos_only: document.getElementById("videosOnly").checked
+  };
+  const dest=document.getElementById("destDir").value.trim();
+  if(dest) body.destination_folder=dest;
+  const btn=document.getElementById("btnAdd");
+  btn.disabled=true; const old=btn.innerHTML; btn.innerHTML="<span class='spinner'></span> Prüfe …";
+  try{
+    await runAction("+ "+links.length+" Links hinzugefügt", ()=>post("/api/links",body));
+    document.getElementById("linksInput").value="";
+    await Promise.all([loadDownloads(),loadLinkgrabber()]);
+  }finally{
+    btn.disabled=false; btn.innerHTML=old;
+  }
+}
+
+/* ============ Aktionen (Event-Delegation) ============ */
+function findPkg(uuid){
+  return (state.downloads.find(p=>String(p.uuid)===String(uuid))) || (state.linkgrabber.find(p=>String(p.uuid)===String(uuid)));
+}
+
+document.addEventListener("click", async function(e){
+  const btn=e.target.closest("button[data-act]");
+  if(!btn) return;
+  const act=btn.dataset.act;
+  const uuid=btn.dataset.uuid;
+
+  if(act==="expand"){
+    const src=btn.dataset.src;
+    state.expanded[uuid]=!state.expanded[uuid];
+    loadDownloads();
+    if(state.expanded[uuid]){
+      const pkg=findPkg(uuid)||{uuid:uuid,source:src==="gallery-dl"?"gallery-dl":"downloads"};
+      if(pkg&&pkg.files_total){ loadFiles({uuid:uuid, source: src==="gallery-dl"?"gallery-dl":"downloads"}); }
+    }
+    return;
+  }
+
+  if(act==="delete"){
+    if(!confirm("Paket wirklich löschen?")) return;
+    e.stopPropagation();
+    await runAction("Gelöscht", ()=>post("/api/downloads/delete",{package_uuid:uuid, source:btn.dataset.src}));
+    loadDownloads();
+    return;
+  }
+  if(act==="prio"){
+    await runAction("Priorisiert", ()=>post("/api/downloads/prioritize",{package_uuid:uuid}));
+    loadDownloads(); return;
+  }
+  if(act==="move"){
+    await runAction("Verschoben "+btn.dataset.dir, ()=>post("/api/downloads/move",{package_uuid:uuid, direction:btn.dataset.dir}));
+    loadDownloads(); return;
+  }
+  if(act==="retry"){
+    await runAction("Retry gestartet", ()=>post("/api/downloads/retry",{package_uuid:uuid, source:"gallery-dl"}));
+    loadDownloads(); return;
+  }
+  if(act==="lgsingle"){
+    await runAction("Paket zum Download übergeben", ()=>post("/api/linkgrabber/download",{package_ids:[uuid], force_offline: document.getElementById("forceOffline").checked, videos_only: false}));
+    setTimeout(loadDownloads, 1200);
+    loadLinkgrabber(); return;
+  }
+});
+
+/* Linkgrabber: alle downloaden */
+document.getElementById("btnLGAll").addEventListener("click", async function(){
+  const btn=this;
+  btn.disabled=true; btn.innerHTML="<span class='spinner'></span> …";
+  try{
+    await runAction("Alle Linkgrabber-Downloads gestartet",
+      ()=>post("/api/linkgrabber/download",{download_all:true, force_offline: document.getElementById("forceOffline").checked, videos_only:false}));
+    setTimeout(loadDownloads, 1200);
+    loadLinkgrabber();
+  }finally{ btn.disabled=false; btn.innerHTML="⬇ Alle downloaden"; }
+});
+
+/* ============ Header-Controls ============ */
+document.getElementById("btnTogglePause").addEventListener("click", togglePause);
+document.getElementById("btnRefresh").addEventListener("click", ()=>{ loadDownloads(); loadStatus(); });
+document.getElementById("btnNewFolder").addEventListener("click", newFolder);
+document.getElementById("btnAdd").addEventListener("click", addLinks);
+
+document.getElementById("segMode").addEventListener("click", function(e){
+  const b=e.target.closest("button[data-mode]");
+  if(!b) return;
+  this.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  state.mode=b.dataset.mode;
+  loadDownloads();
+});
+document.getElementById("hoursSel").addEventListener("change", function(){
+  state.hours=this.value;
+  loadDownloads();
+});
+
+/* ============ Poller ============ */
+function startPolling(){
+  clearInterval(statusTimer); clearInterval(dlTimer); clearInterval(lgTimer);
+  statusTimer=setInterval(loadStatus, 5000);
+  dlTimer=setInterval(loadDownloads, DL_INTERVAL);
+  lgTimer=setInterval(loadLinkgrabber, LG_INTERVAL);
+}
+(async function boot(){
+  startPolling();
+  await Promise.all([loadStatus(), loadDownloads(), loadLinkgrabber()]);
+  loadFolders();
+})();
+</script>
+</body>
+</html>

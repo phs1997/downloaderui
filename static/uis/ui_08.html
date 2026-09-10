@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JD Console // PRO</title>
+<style>
+:root{
+  --bg:#161616; --bg2:#1f1f1f; --bg3:#262626;
+  --line:#393939; --line2:#444;
+  --txt:#f4f4f4; --mut:#a8a8a8; --mut2:#6f6f6f;
+  --blue:#4589ff; --blue-soft:#0f62fe;
+  --purple:#a56eff; --green:#42be65; --red:#fa4d56; --orange:#ff832b; --yellow:#f1c21b;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:var(--sans); font-size:13px; line-height:1.4;
+}
+.wrap{max-width:1500px;margin:0 auto;padding:10px 14px 60px}
+h1,h2,h3{margin:0;font-weight:600}
+.mono{font-family:var(--mono)}
+a{color:var(--blue)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#3d3d3d;border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ------------- header ------------- */
+.hd{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px}
+.hd .t{font-family:var(--mono);font-weight:700;font-size:16px;letter-spacing:.5px}
+.hd .t span{color:var(--blue)}
+.hdg{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);padding:3px 9px;border-radius:3px;font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.dot.on{background:var(--green);box-shadow:0 0 5px var(--green)}
+.dot.off{background:var(--red)}
+.dot.idle{background:var(--yellow)}
+.dot.busy{background:var(--blue)}
+.hd .mono.speed{font-size:13px;color:var(--blue);font-weight:600}
+.hd .mut{color:var(--mut);font-size:12px}
+.btn{
+  background:var(--bg2);color:var(--txt);border:1px solid var(--line2);
+  padding:4px 11px;font-size:12px;border-radius:3px;cursor:pointer;font-family:var(--sans);
+  transition:background .12s,border-color .12s;
+}
+.btn:hover{background:var(--bg3);border-color:var(--blue)}
+.btn:disabled{opacity:.45;cursor:not-allowed;border-color:var(--line)}
+.btn.primary{background:var(--blue-soft);border-color:var(--blue-soft);color:#fff}
+.btn.primary:hover{background:#0b5ed7}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+.btn.sm{padding:1px 7px;font-size:11px;border-radius:2px}
+.btn.ghost{background:transparent}
+
+/* ------------- sections ------------- */
+.sec{border:1px solid var(--line);background:var(--bg2);margin-bottom:16px;border-radius:4px;overflow:hidden}
+.sec-h{display:flex;align-items:center;gap:10px;padding:7px 12px;background:var(--bg3);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sec-h h2{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
+.sec-h .cnt{font-family:var(--mono);color:var(--mut2);font-size:11px}
+.sec-b{padding:6px 0}
+
+/* toolbar */
+.tb{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--bg2)}
+.tb .lbl{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-right:2px}
+
+/* badges */
+.badge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.6px;padding:1px 6px;border-radius:2px;display:inline-block;flex:none}
+.badge.jd{background:rgba(69,137,255,.18);color:#7fb0ff;border:1px solid rgba(69,137,255,.5)}
+.badge.gdl{background:rgba(165,110,255,.16);color:#c49bff;border:1px solid rgba(165,110,255,.5)}
+.cat{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:1px 6px;border-radius:2px;flex:none}
+.cat.running,.cat.crawling{background:rgba(69,137,255,.16);color:var(--blue)}
+.cat.finished{background:rgba(66,190,133,.14);color:var(--green)}
+.cat.error{background:rgba(250,77,86,.16);color:var(--red)}
+.cat.queued,.cat.ready{background:rgba(241,193,27,.12);color:var(--yellow)}
+.cat.skipped{background:#525252;color:#c6c6c6}
+
+/* ------------- table ------------- */
+table.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{
+  text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut2);
+  padding:5px 10px;border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap;background:var(--bg3)}
+.tbl td{padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover{background:rgba(69,137,255,.05)}
+.name{font-weight:600;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.namerow{display:flex;align-items:center;gap:7px;max-width:340px}
+.namecol{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mut{color:var(--mut)} .mut2{color:var(--mut2)}
+.rank{display:inline-block;min-width:26px;text-align:right;color:var(--mut2);font-family:var(--mono);font-size:11px}
+.acts{display:flex;gap:4px;white-space:nowrap}
+.sttx{color:var(--mut);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* status dot + star */
+.sdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+.star{color:var(--yellow);font-family:var(--mono)}
+.nostar{color:var(--mut2)}
+
+/* progress */
+.pbar{width:90px;height:6px;background:#3a3a3a;border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle}
+.pfill{height:100%;background:var(--blue)}
+.pfill.done{background:var(--green)}
+.pfill.err{background:var(--red)}
+.pct{font-family:var(--mono);font-size:11px;margin-left:6px}
+
+/* expand */
+.exp{display:none}
+.exp.open{display:block;background:#1a1a1a;border-top:1px solid var(--line)}
+.exphead{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.files-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.files-tbl th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--mut2);padding:4px 12px;border-bottom:1px solid var(--line)}
+.files-tbl td{padding:4px 12px;border-bottom:1px solid #2a2a2a;color:var(--mut)}
+.files-tbl tr:last-child td{border-bottom:none}
+.ft-name{color:var(--txt);max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* toggle */
+.tgl{display:flex;gap:6px}
+.tgl button{background:transparent;border:1px solid var(--line2);color:var(--mut);padding:3px 9px;font-size:11px;border-radius:2px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}
+.tgl button.on{background:var(--blue-soft);border-color:var(--blue-soft);color:#fff}
+
+/* flash / toast */
+#flash{position:fixed;bottom:14px;right:14px;z-index:50;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.toast{background:#2b2b2b;border:1px solid var(--line2);border-left:3px solid var(--blue);padding:8px 14px;border-radius:3px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:340px;animation:s .18s ease}
+.toast.err{border-left-color:var(--red)}
+.toast.ok{border-left-color:var(--green)}
+@keyframes s{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+/* add section */
+.add-grid{display:grid;grid-template-columns:1fr 320px;gap:14px;padding:12px}
+@media(max-width:860px){.add-grid{grid-template-columns:1fr}}
+.add-l{display:flex;flex-direction:column;gap:8px}
+textarea.txt{
+  width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--txt);
+  font-family:var(--mono);font-size:12px;padding:8px;border-radius:3px;resize:vertical;min-height:110px}
+textarea.txt:focus{outline:none;border-color:var(--blue)}
+.inp{background:var(--bg);border:1px solid var(--line2);color:var(--txt);font-size:12px;padding:5px 8px;border-radius:3px;width:100%}
+.inp:focus{outline:none;border-color:var(--blue)}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.file-row{display:flex;gap:8px;align-items:center}
+.file-row .inp{flex:1}
+.boxes{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}
+.cbx{display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--mut)}
+.cbx input{accent-color:var(--blue)}
+.legend{font-size:10px;color:var(--mut2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px}
+.empty{padding:18px 12px;text-align:center;color:var(--mut2);font-size:12px;font-family:var(--mono)}
+.crawling-ani{color:var(--blue);animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.35}}
+.nowrap{white-space:nowrap}
+.right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.diskbar{width:60px;height:6px;background:#3a3a3a;border-radius:3px;overflow:hidden;display:inline-block}
+.diskbar .f{height:100%;background:var(--green)}
+.diskbar .f.warn{background:var(--orange)}
+.diskbar .f.err{background:var(--red)}
+.fs{font-family:var(--mono);font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hd">
+    <div class="t"><span>JD</span> CONSOLE // PRO</div>
+    <div class="hdg"><span id="stDot" class="dot off"></span><span id="stTxt">OFFLINE</span></div>
+    <div class="hdg">SPD <span class="mono speed" id="stSpeed">0 B/s</span></div>
+    <div class="hdg">STATE <span class="mono" id="stState">--</span></div>
+    <div class="hdg" style="flex-wrap:wrap">DISK <span id="diskSpans" class="fs"></span>
+      <span class="diskbar"><span id="diskBar" class="f"></span></span>
+      <span class="mut fs" id="diskPct"></span>
+    </div>
+    <div class="right">
+      <span class="mut" id="devName" style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <button class="btn" id="btnPause">⏸ Pause</button>
+      <button class="btn primary" id="btnResume">▶ Resume</button>
+    </div>
+  </header>
+
+  <!-- DOWNLOADS -->
+  <section class="sec">
+    <div class="sec-h">
+      <h2>Downloads</h2>
+      <span class="cnt" id="dlCount">0</span>
+      <span class="cnt" id="dqInfo"></span>
+      <div class="right">
+        <div class="tgl" id="modeTgl">
+          <button data-m="active" class="on">Active</button>
+          <button data-m="all">All</button>
+        </div>
+        <select class="inp" id="hoursSel" style="width:auto">
+          <option value="">–</option>
+          <option value="24">24h</option>
+          <option value="48">48h</option>
+          <option value="168">7d</option>
+        </select>
+      </div>
+    </div>
+    <div class="sec-b">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="width:26px"></th>
+            <th>Name</th>
+            <th>Source</th>
+            <th>Status</th>
+            <th style="width:150px">Progress</th>
+            <th>Speed</th>
+            <th>ETA</th>
+            <th>Files</th>
+            <th>Pri</th>
+            <th style="width:220px">Aktionen</th>
+          </tr>
+        </thead>
+        <tbody id="dlBody"></tbody>
+      </table>
+      <div class="empty" id="dlEmpty" style="display:none">// keine downloads</div>
+    </div>
+  </section>
+
+  <!-- LINKGRABBER -->
+  <section class="sec">
+    <div class="sec-h">
+      <h2>Linkgrabber</h2>
+      <span class="cnt" id="lgCount">0</span>
+      <div class="right">
+        <div class="row" style="gap:12px">
+          <label class="cbx"><input type="checkbox" id="lgVideosOnly"> videos-only</label>
+          <label class="cbx"><input type="checkbox" id="lgForceOffline"> force-offline</label>
+          <button class="btn primary" id="btnGetAll">⬇ Download All</button>
+        </div>
+      </div>
+    </div>
+    <div class="sec-b">
+      <table class="tbl">
+        <thead><tr>
+          <th style="width:26px"></th><th>Name</th><th>Files</th><th>Size</th>
+          <th>Save_to</th><th>Status</th><th style="width:210px">Aktionen</th>
+        </tr></thead>
+        <tbody id="lgBody"></tbody>
+      </table>
+      <div class="empty" id="lgEmpty" style="display:none">// linkgrabber leer</div>
+    </div>
+  </section>
+
+  <!-- ADD -->
+  <section class="sec">
+    <div class="sec-h"><h2>Links hinzufügen</h2><span class="cnt">multi-line</span></div>
+    <div class="add-grid">
+      <div class="add-l">
+        <textarea class="txt" id="addUrls" placeholder="http://freigeber.example/galerie&#10;http://host/path2&#10;..."></textarea>
+        <div class="boxes">
+          <label class="cbx"><input type="checkbox" id="addAutostart" checked> Autostart</label>
+          <label class="cbx"><input type="checkbox" id="addVideosOnly"> Videos only</label>
+        </div>
+      </div>
+      <div>
+        <div class="legend">Zielordner</div>
+        <div class="file-row">
+          <input class="inp" id="destFolder" list="folderList" placeholder="/output/…">
+          <datalist id="folderList"></datalist>
+          <button class="btn sm" id="btnNewFolder" title="Neuen Ordner erstellen">+</button>
+        </div>
+        <div class="row" style="margin-top:8px;gap:7px">
+          <button class="btn primary" id="btnSubmit" style="flex:1;padding:8px">▶ Hinzufügen</button>
+        </div>
+        <div class="mut2" id="addFeedback" style="margin-top:8px;font-size:11px;min-height:16px"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div id="flash"></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const gdlSrc=u=>String(u||"").startsWith("gdl_");
+const isGDL=i=>gdlSrc(i.uuid)||i.source==="gallery-dl";
+const CAT={running:["running","⦿"],crawling:["crawling","⦿"],error:["error","✕"],finished:["finished","✓"],queued:["queued","·"],skipped:["skipped","−"],ready:["ready","·"]};
+let filesCache={}, folders=[];
+
+function flash(msg,type){
+  const t=document.createElement("div");t.className="toast "+(type||"");
+  t.textContent=msg;document.getElementById("flash").appendChild(t);
+  setTimeout(()=>t.remove(),4200);
+}
+async function api(path,opts){
+  const r=await fetch(path,opts);
+  let j=null;try{j=await r.json()}catch(e){}
+  if(!r.ok){throw new Error((j&&j.detail)||("HTTP "+r.status))}
+  return j;
+}
+function post(path,body){
+  return api(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})});
+}
+
+/* ---------- header ---------- */
+async function loadStatus(){
+  let s;
+  try{s=await api("/api/status")}catch(e){s={connected:false}}
+  const dot=$("#stDot");
+  dot.className="dot "+(s.connected?"on":"off");
+  $("#stTxt").textContent=s.connected?"CONNECTED":"OFFLINE";
+  $("#stState").textContent=(s.state||"--").slice(0,12);
+  $("#stSpeed").textContent=s.speed_formatted||"0 B/s";
+  $("#devName").textContent=s.device_name||"";
+  const d=s.disk||{};
+  if(d.free_formatted!==undefined){
+    $("#diskSpans").innerHTML="<span class=\"mut2\">free</span>&nbsp;"+esc(d.free_formatted)+"&nbsp;<span class=\"mut2\">/&nbsp;"+esc(d.total_formatted)+"</span>";
+    const p=d.percent_used||0;
+    const barEl=$("#diskBar");
+    barEl.style.width=Math.min(100,p)+"%";
+    barEl.className="f"+(p>=90?" err":(p>=75?" warn":""));
+    $("#diskPct").textContent=p.toFixed?p.toFixed(1)+"% used":p+"% used";
+  }
+}
+
+/* ---------- downloads ---------- */
+let dlMode="active", dlHours="";
+async function loadDls(){
+  let data;
+  try{
+    data=await api("/api/downloads?mode="+encodeURIComponent(dlMode)+(dlHours?"&hours="+dlHours:""));
+  }catch(e){flash("downloads: "+e.message,"err");return}
+  const items=data.items||[];
+  $("#dlCount").textContent="["+items.length+"]";
+  const qi=data.queue_info;
+  $("#dqInfo").textContent=qi?("queue rest "+qi.queue_remaining_formatted+(qi.sufficient_space?" ✓":" ⚠")):"";
+  $("#dlEmpty").style.display=items.length?"none":"block";
+  const body=$("#dlBody");
+  const prevOpen={};body.querySelectorAll("tr.tr-r").forEach(tr=>{if(tr.getAttribute("data-open")==="1")prevOpen[tr.dataset.u+"/"+tr.dataset.src]=1});
+  body.innerHTML="";
+  items.forEach((it,i)=>{
+    const src=isGDL(it)?"gdl":"jd";
+    const c=CAT[it.category]||["queued","·"];
+    const pFill=it.category==="error"?"err":(it.category==="finished"?"done":"");
+    const open=prevOpen[it.uuid+"/"+it.source];
+    const tr=document.createElement("tr");
+    tr.className="tr-r";tr.dataset.u=it.uuid;tr.dataset.src=it.source;
+    tr.innerHTML=
+      '<td><span class="rank">'+String(i+1).padStart(2,"0")+'</span></td>'+
+      '<td><div class="namerow"><span class="namecol name" title="'+esc(it.name)+'">'+esc(it.name)+'</span></div></td>'+
+      '<td><span class="badge '+src+'">'+(src==="gdl"?"GDL":"JD")+'</span></td>'+
+      '<td><span class="cat '+esc(c[0])+'">'+esc(c[1])+' '+esc(c[0])+'</span><div class="sttx">'+esc(it.status||"")+'</div></td>'+
+      '<td class="nowrap"><span class="pbar"><span class="pfill '+pFill+'" style="width:'+Math.min(100,it.percent||0)+'%"></span></span><span class="pct">'+(it.percent||0).toFixed(1)+'%</span></td>'+
+      '<td class="mono nowrap">'+esc(it.speed_formatted||"–")+'</td>'+
+      '<td class="mono nowrap">'+esc(it.eta_formatted||"–")+'</td>'+
+      '<td class="mono nowrap">'+(it.files_done??0)+'/'+(it.files_total??0)+'<span class="mut2">/'+((it.files_error??0)?'<span style="color:var(--red)">'+it.files_error+'!</span>':'0')+'</span></td>'+
+      '<td class="mono nowrap">'+(it.is_prioritized?'<span class="star">★'+(it.priority||"")+'</span>':'<span class="nostar">·</span>')+'</td>';
+    const ac=document.createElement("td");
+    ac.className="acts";
+    const b=cls=>{const e=document.createElement("button");e.className="btn sm "+cls;e.type="button";return e};
+    const tog=document.createElement("button");
+    tog.className="btn sm ghost";tog.type="button";tog.textContent=open?"▲":"▼";
+    tog.onclick=()=>toggleFiles(it,tog);
+    ac.appendChild(tog);
+    if(src==="jd"){
+      const up=b(),down=b(),pri=b();
+      up.textContent="↑";down.textContent="↓";pri.textContent=it.is_prioritized?"○":"★";
+      up.title="Nach oben";down.title="Nach unten";pri.title="Priorität";
+      up.onclick=()=>post("/api/downloads/move",{package_uuid:it.uuid,direction:"up"}).then(()=>flash("↑ "+it.name,"ok")).catch(e=>flash(e.message,"err"));
+      down.onclick=()=>post("/api/downloads/move",{package_uuid:it.uuid,direction:"down"}).then(()=>flash("↓ "+it.name,"ok")).catch(e=>flash(e.message,"err"));
+      pri.onclick=()=>post("/api/downloads/prioritize",{package_uuid:it.uuid}).then(r=>flash("Priorität → "+r.priority,"ok")).catch(e=>flash(e.message,"err"));
+      ac.appendChild(up);ac.appendChild(down);ac.appendChild(pri);
+    }else{
+      const rt=b("danger");rt.textContent="↻";rt.title="Retry";
+      rt.onclick=()=>post("/api/downloads/retry",{package_uuid:it.uuid,source:"gallery-dl"}).then(()=>flash("Retry "+it.name,"ok")).catch(e=>flash(e.message,"err"));
+      ac.appendChild(rt);
+    }
+    const del=b("danger");del.textContent="✕";del.title="Delete";
+    del.onclick=()=>{if(!confirm("Paket löschen?\n"+it.name))return;post("/api/downloads/delete",{package_uuid:it.uuid,source:it.source}).then(()=>flash("Gelöscht","ok")).catch(e=>flash(e.message,"err"))};
+    ac.appendChild(del);
+    tr.appendChild(ac);
+    body.appendChild(tr);
+    const ex=document.createElement("tr");
+    ex.className="exp"+(open?" open":"");ex.dataset.u=it.uuid;ex.dataset.src=it.source;
+    ex.innerHTML='<td colspan="10" style="padding:0"><div class="expbody" id="exp-'+esc(it.uuid)+'"></div></td>';
+    if(open)fetchFiles(it);
+    body.appendChild(ex);
+  });
+}
+function toggleFiles(it,tog){
+  const ex=document.querySelector('tr.exp[data-u="'+CSS.escape(it.uuid)+'"][data-src="'+CSS.escape(it.source)+'"]');
+  if(!ex)return;
+  const open=!ex.classList.contains("open");
+  ex.classList.toggle("open",open);
+  tog.textContent=open?"▲":"▼";
+  if(open)fetchFiles(it);
+}
+function fetchFiles(it){
+  const key=it.uuid+"/"+it.source;
+  const box=document.getElementById("exp-"+it.uuid);
+  if(!box)return;
+  box.innerHTML='<div class="empty">// lade dateien…</div>';
+  api("/api/downloads/files?package_uuid="+encodeURIComponent(it.uuid)+"&source="+encodeURIComponent(it.source)).then(j=>{
+    const fs=j.files||[];
+    filesCache[key]=fs;
+    if(!box)return;
+    if(!fs.length){box.innerHTML='<div class="empty">// keine dateien</div>';return}
+    let h='<table class="files-tbl"><thead><tr><th>Name</th><th>Status</th><th>Progress</th><th>Speed</th><th>ETA</th><th>Size</th></tr></thead><tbody>';
+    fs.forEach(f=>{
+      const st=f.finished?"✓ finished":(f.running?"⦿ "+esc(f.status||"running"):esc(f.status||"ready"));
+      h+='<tr><td class="ft-name" title="'+esc(f.name)+'">'+esc(f.name)+'</td>'+
+         '<td>'+st+'</td>'+
+         '<td class="mono nowrap">'+(f.percent||0).toFixed(1)+'%</td>'+
+         '<td class="mono nowrap">'+esc(f.speed_formatted||"–")+'</td>'+
+         '<td class="mono nowrap">'+esc(f.eta_formatted||"–")+'</td>'+
+         '<td class="mono nowrap">'+esc(f.bytes_total_formatted||"–")+'</td></tr>';
+    });
+    h+='</tbody></table>';
+    box.innerHTML=h;
+  }).catch(e=>{box.innerHTML='<div class="empty">// fehler: '+esc(e.message)+'</div>'});
+}
+
+/* ---------- linkgrabber ---------- */
+async function loadLg(){
+  let data;
+  try{data=await api("/api/linkgrabber")}catch(e){flash("linkgrabber: "+e.message,"err");return}
+  const items=data.items||[];
+  $("#lgCount").textContent="["+items.length+"]";
+  $("#lgEmpty").style.display=items.length?"none":"block";
+  const lgV=$("#lgVideosOnly").checked,lgF=$("#lgForceOffline").checked;
+  const body=$("#lgBody");body.innerHTML="";
+  items.forEach((it,i)=>{
+    const gdl=isGDL(it);
+    const src=gdl?"gdl":"jd";
+    const st=it.crawling?'<span class="crawling-ani">⦿ crawling…</span>':esc(it.status||(it.category==="error"?"error":"ready"));
+    const tr=document.createElement("tr");
+    tr.innerHTML=
+      '<td><span class="rank">'+String(i+1).padStart(2,"0")+'</span></td>'+
+      '<td><div class="namerow"><span class="namecol name" title="'+esc(it.name)+'">'+esc(it.name)+'</span></div></td>'+
+      '<td class="mono">'+(it.files_total??0)+'</td>'+
+      '<td class="mono nowrap">'+esc(it.bytes_total_formatted||"--")+'</td>'+
+      '<td class="sttx mut" style="max-width:180px" title="'+esc(it.save_to)+'">'+esc(it.save_to||"")+'</td>'+
+      '<td><span class="badge '+src+'">'+(gdl?"GDL":"JD")+'</span> <span class="mut" style="font-size:11px">'+st+'</span></td>';
+    const ac=document.createElement("td");ac.className="acts";
+    const b=cls=>{const e=document.createElement("button");e.className="btn sm "+cls;e.type="button";return e};
+    const dl=b("primary");dl.textContent="⬇";dl.title="Download (start JH/source)";
+    dl.onclick=()=>{const ids=gdl?[it.uuid]:[it.uuid];
+      post("/api/linkgrabber/download",{package_ids:ids,force_offline:lgF,videos_only:lgV}).then(r=>flash(r.message||"ok","ok")).catch(e=>flash(e.message,"err"))};
+    ac.appendChild(dl);
+    if(gdl){
+      const dir=b();dir.textContent="📁";dir.title="Verzeichnis ändern (prompt)";
+      dir.onclick=()=>{const d=prompt("Neues Zielverzeichnis",it.save_to||"");if(d&&d.trim())post("/api/linkgrabber/set-directory",{package_uuid:it.uuid,directory:d.trim()}).then(r=>flash(r.message,"ok")).catch(e=>flash(e.message,"err"))};
+      ac.appendChild(dir);
+    }
+    const rm=b("danger");rm.textContent="✕";rm.title="Entfernen";
+    rm.onclick=()=>{if(!confirm("Entfernen?\n"+it.name))return;post("/api/downloads/delete",{package_uuid:it.uuid,source:gdl?"gallery-dl":"linkgrabber"}).then(()=>flash("Entfernt","ok")).catch(e=>flash(e.message,"err"))};
+    ac.appendChild(rm);
+    tr.appendChild(ac);
+    body.appendChild(tr);
+  });
+}
+
+/* ---------- folders ---------- */
+async function loadFolders(){
+  try{const d=await api("/api/folders");folders=d.folders||[];
+    $("#folderList").innerHTML=folders.map(f=>'<option value="/output/'+esc(f)+'">'+(esc(f)+(d.base_path?(" — in "+esc(d.base_path)):""))+'</option>').join("")}
+  catch(e){/* ok */ }
+}
+
+/* ---------- actions / add ---------- */
+function bindHeader(){
+  $("#btnPause").onclick=()=>post("/api/control",{action:"pause"}).then(()=>flash("Pausiert","ok")).catch(e=>flash(e.message,"err"));
+  $("#btnResume").onclick=()=>post("/api/control",{action:"resume"}).then(()=>flash("Resumed","ok")).catch(e=>flash(e.message,"err"));
+  $("#modeTgl").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    $("#modeTgl").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+    dlMode=b.dataset.m;loadDls();
+  });
+  $("#hoursSel").onchange=e=>{dlHours=e.target.value;loadDls()};
+  $("#btnGetAll").onclick=()=>post("/api/linkgrabber/download",{download_all:true,force_offline:$("#lgForceOffline").checked,videos_only:$("#lgVideosOnly").checked}).then(r=>flash(r.message||"ok","ok")).catch(e=>flash(e.message,"err"));
+  $("#btnNewFolder").onclick=async()=>{
+    const n=prompt("Neuer Ordnername (im Storage-Verzeichnis):");
+    if(!n||!n.trim())return;
+    try{const r=await post("/api/folders/create",{name:n.trim()});flash(r.message||"Ordner erstellt","ok");loadFolders();
+      $("#destFolder").value="/output/"+n.trim();
+    }catch(e){flash(e.message,"err")}
+  };
+  $("#btnSubmit").onclick=submitAdd;
+}
+async function submitAdd(){
+  const links=$("#addUrls").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  if(!links.length){flash("Keine Links angegeben.","err");return}
+  const fold=$("#destFolder").value.trim();
+  const body={links,autostart:$("#addAutostart").checked,videos_only:$("#addVideosOnly").checked};
+  if(fold)body.destination_folder=fold;
+  $("#btnSubmit").disabled=true;$("#addFeedback").textContent="// sende…";
+  try{
+    const r=await post("/api/links",body);
+    $("#addFeedback").textContent="✓ "+(r.message||"ok");
+    flash(r.message||"Links hinzugefügt","ok");
+    $("#addUrls").value="";
+    loadLg();if(body.autostart)loadDls();
+  }catch(e){$("#addFeedback").textContent="✕ "+e.message;flash(e.message,"err")}
+  finally{$("#btnSubmit").disabled=false}
+}
+
+/* ---------- poll ---------- */
+async function tick(){
+  const dls=loadDls(),lg=loadLg(),st=loadStatus();
+  await Promise.all([dls,lg,st]);
+}
+function start(){
+  bindHeader();loadFolders();
+  // Header first then tables
+  tick();
+  setInterval(tick,4000);
+  setInterval(loadFolders,60000);
+}
+document.addEventListener("DOMContentLoaded",start);
+</script>
+</body>
+</html>

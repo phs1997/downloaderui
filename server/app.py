@@ -576,3 +576,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/")
 def serve_index():
     return FileResponse("static/index.html")
+
+
+@app.get("/test")
+def serve_test_index():
+    """Separates Test-UI (fancy Dashboard) - nur als Test, Produktion bleibt auf /."""
+    return FileResponse("static/test_index.html")

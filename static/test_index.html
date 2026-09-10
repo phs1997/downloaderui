@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI-Showroom — Testansichten</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1020;color:#e6ebff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem}
+  .wrap{max-width:1100px;width:100%}
+  h1{font-size:clamp(1.5rem,4vw,2.2rem);font-weight:800;background:linear-gradient(90deg,#7c3aed,#ec4899,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:.25rem}
+  .sub{color:#8b93ad;margin-bottom:1.5rem;font-size:.95rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem}
+  .card{background:#151a2e;border:1px solid #242b47;border-radius:16px;padding:1.2rem;display:flex;flex-direction:column;gap:.6rem;transition:transform .15s,box-shadow .15s,border-color .15s}
+  .card:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.4);border-color:#3b4aa0}
+  .num{font-size:.7rem;font-weight:700;letter-spacing:.08em;color:#7c8bff}
+  .name{font-size:1.05rem;font-weight:700}
+  .desc{font-size:.82rem;color:#aab3cc;line-height:1.4;flex:1}
+  .swatches{display:flex;gap:4px;margin:.2rem 0}
+  .sw{width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.2)}
+  .open{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;font-weight:600;font-size:.85rem;padding:.5rem .8rem;border-radius:10px;transition:filter .15s,transform .1s}
+  .open:hover{filter:brightness(1.15)}
+  .open:active{transform:scale(.97)}
+  .foot{margin-top:2rem;font-size:.75rem;color:#5a6380;text-align:center;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎛 UI-Showroom</h1>
+  <div class="sub">8 alternative Test-Ansichten. Wähle ein UI zum Testen — danach teile mir mit, welches live gehen soll.</div>
+  <div class="grid" id="grid"></div>
+  <div class="foot">Alle Test-UIs greifen auf die echte REST-API zu. Produktives Standard-UI bleibt unter <code>/</code> unverändert.</div>
+</div>
+<script>
+const UIS=[
+  {id:'ui_01',name:'Neon Dashboard',desc:'Lebendiges Dashboard mit Gradienten, Glassmorphism, Glow-Effekten; Stat-Kacheln oben, farbige Paketkarten.',sw:['#7c3aed','#ec4899','#06b6d4'],colors:'Violett/Fuchsia/Türkis auf Dunkel'},
+  {id:'ui_02',name:'Minimalist Light',desc:'Helles, luftiges, frisches Design mit viel Weißraum, sanften Karten und blauem Akzent. Angenehm & clean.',sw:['#f8fafc','#3b82f6','#e2e8f0'],colors:'Weiß / Hellgrau / Blau'},
+  {id:'ui_03',name:'Retro Terminal',desc:'Dunkle Matrix-Kommandozeilenoptik: grün/amber auf schwarz, Monospace, Block-Cursor & ASCII-Rahmen.',sw:['#0a0f0c','#22c55e','#f59e0b'],colors:'Schwarz / Matrix-Grün / Amber'},
+  {id:'ui_04',name:'Cyberpunk Neon',desc:'Futuristisch: Neon-Cyan/Magenta mit Glow, Glitch-Animationen, scharfe Geometrie, Orbitron-Typo.',sw:['#050014','#00ffcc','#ff2e88'],colors:'Dunkel / Neon-Cyan / Magenta'},
+  {id:'ui_05',name:'Material Flat',desc:'Runder Material-3-Stil: kräftige Primärfarbe, farbige Zustandschips, weiche Elevation, groß & touchfreundlich.',sw:['#ffffff','#4f46e5','#f472b6'],colors:'Hell / Indigo / Rosa'},
+  {id:'ui_06',name:'Brutalist',desc:'Eckige Kanten, dicke Rahmen, Schwarz+Gelb+Rot, große fette Typo. Bewusst raw & plakativ.',sw:['#111111','#facc15','#ef4444'],colors:'Schwarz / Pollen-Gelb / Knallrot'},
+  {id:'ui_07',name:'Aurora Pastell',desc:'Sanfte Lavendel/Rosa/Mint-Verläufe, weiche Schatten, ruhige cremige Farben. Freundlich & modern.',sw:['#d8b4fe','#f9a8d4','#5eead4'],colors:'Pastell-Lavendel / Rosa / Mint'},
+  {id:'ui_08',name:'Data-Dense Pro',desc:'Effiziente dichte Konsolenoptik (IBM-Carbon): Tabellen/Zeilen, Monospace-Zahlen, Statuspunkte, viel Info auf kleinem Raum.',sw:['#161616','#4589ff','#8a3ffc'],colors:'Carbon-Dunkel / Blau / Lila'}
+];
+const grid=document.getElementById('grid');
+UIS.forEach(u=>{
+  const c=document.createElement('a');
+  c.className='card';
+  c.href='uis/'+u.id+'.html';
+  c.target='_blank';
+  c.innerHTML=`
+    <div class="num">${u.id.toUpperCase()}</div>
+    <div class="name">${u.name}</div>
+    <div class="swatches">${u.sw.map(s=>`<div class="sw" style="background:${s}"></div>`).join('')}</div>
+    <div class="desc">${u.desc}</div>
+    <span class="open">Testen →</span>
+  `;
+  grid.appendChild(c);
+});
+</script>
+</body>
+</html>

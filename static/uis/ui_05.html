@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JD &amp; gallery-dl · Material WebUI</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<style>
+:root{
+  --primary:#3f51b5; --primary-dark:#303f9f; --primary-light:#c5cae9;
+  --indigo-50:#e8eaf6; --indigo-100:#c5cae9;
+  --gdl:#7b1fa2; --gdl-light:#e1bee7; --gdl-dark:#4a148c;
+  --jd:#1e88e5; --jd-light:#bbdefb;
+  --success:#43a047; --success-light:#c8e6c9;
+  --error:#e53935; --error-light:#ffcdd2;
+  --warn:#fb8c00; --warn-light:#ffe0b2;
+  --surface:#ffffff; --bg:#f4f6fb;
+  --text:#212121; --text-2:#5f6368; --text-3:#9e9e9e;
+  --divider:#eceff1;
+  --shadow-1:0 1px 3px rgba(60,64,67,.16),0 1px 2px rgba(60,64,67,.12);
+  --shadow-2:0 3px 8px rgba(60,64,67,.22),0 2px 4px rgba(60,64,67,.14);
+  --shadow-3:0 8px 20px rgba(60,64,67,.28);
+  --radius:20px; --radius-s:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Roboto',system-ui,sans-serif; color:var(--text);
+  background:var(--bg); line-height:1.45; padding-bottom:80px;
+}
+button{font-family:inherit; cursor:pointer; border:none; border-radius:999px;
+  font-weight:500; letter-spacing:.2px; transition:transform .08s ease, box-shadow .2s ease, background .2s ease; color:#fff;}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.5;cursor:not-allowed}
+svg.icon{fill:currentColor;flex:none}
+
+/* ---------- App bar ---------- */
+.appbar{
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(135deg,var(--primary-dark),var(--primary));
+  color:#fff; box-shadow:var(--shadow-2);
+}
+.appbar-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:14px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand .logo{background:#fff;color:var(--primary-dark);width:44px;height:44px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;box-shadow:var(--shadow-1)}
+.brand h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.3px}
+.brand small{display:block;font-weight:400;color:#c5cae9;font-size:12px;margin-top:2px}
+.stat{background:rgba(255,255,255,.16);border-radius:14px;padding:7px 14px;min-width:96px;text-align:center}
+.stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.8px;opacity:.85}
+.stat .v{font-size:16px;font-weight:700;white-space:nowrap}
+.stat .v.small{font-size:13px;margin-top:1px;display:block}
+.icon-btn{background:rgba(255,255,255,.16);width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
+.icon-btn:hover{background:rgba(255,255,255,.28)}
+.conn{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);border-radius:999px;padding:8px 14px;font-weight:500;font-size:13px}
+.dot{width:11px;height:11px;border-radius:50%;background:#9e9e9e;flex:none}
+.dot.on{background:#69f0ae;box-shadow:0 0 0 4px rgba(105,240,174,.25);animation:pulse 1.6s infinite}
+.dot.off{background:#ff8a80}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(105,240,174,0)}}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1100px;margin:0 auto;padding:24px 18px}
+.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:22px;align-items:start}
+@media(max-width:920px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-1);overflow:hidden}
+.card-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--divider)}
+.card-head h2{margin:0;font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px}
+.card-head h2 svg{color:var(--primary)}
+.muted{color:var(--text-2)}
+.tiny{font-size:12px;color:var(--text-3)}
+
+/* ---------- Tabs / segmented ---------- */
+.seg{display:inline-flex;background:var(--indigo-100);border-radius:999px;padding:4px;gap:4px;margin-left:auto}
+.seg button{background:transparent;color:var(--text-2);padding:7px 16px;border-radius:999px;font-size:13px}
+.seg button.active{background:var(--primary);color:#fff;box-shadow:var(--shadow-1)}
+.seg button.active.gd{background:var(--gdl)}
+
+/* ---------- Source chips ---------- */
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 11px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;flex:none}
+.chip.gd{background:var(--gdl-light);color:var(--gdl-dark)}
+.chip.jd{background:var(--jd-light);color:#0d47a1}
+.chip .mdis{font-size:13px}
+
+/* ---------- Category chips ---------- */
+.tag{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:2px 9px;font-size:11px;font-weight:700;flex:none}
+.tag.running{background:var(--success-light);color:#2e7d32}
+.tag.error{background:var(--error-light);color:#b71c1c}
+.tag.finished{background:#e0e0e0;color:#424242}
+.tag.queued{background:#e3f2fd;color:#1565c0}
+.tag.crawling{background:var(--warn-light);color:#e65100}
+.tag.ready{background:var(--indigo-50);color:var(--primary-dark)}
+
+/* ---------- Package rows ---------- */
+.pkg{border-bottom:1px solid var(--divider)}
+.pkg:last-child{border-bottom:none}
+.pkg-top{display:flex;align-items:center;gap:8px;padding:14px 22px}
+.pkg-top:hover{background:var(--indigo-50)}
+.pkg-info{flex:1;min-width:0;cursor:pointer}
+.pkg-title{font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:2px}
+.pkg-title .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;word-break:break-all}
+.pkg-meta{font-size:12.5px;color:var(--text-2);display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.pkg-meta b{color:var(--text)}
+.pbar{height:8px;background:#eceff1;border-radius:999px;margin-top:9px;overflow:hidden;flex:1;min-width:120px}
+.pbar>div{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--primary),#7986cb);transition:width .5s ease}
+.pkg.pgdl .pbar>div{background:linear-gradient(90deg,var(--gdl),#ab47bc)}
+.pkg.perr .pbar>div{background:var(--error)}
+.pkg.pdone .pbar>div{background:#9e9e9e;width:100% !important}
+.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.act-btn{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:transparent;color:var(--text-2)}
+.act-btn:hover{background:var(--indigo-100);color:var(--primary-dark)}
+.act-btn.danger:hover{background:var(--error-light);color:#b71c1c}
+.act-btn.pri:hover{background:var(--warn-light);color:#e65100}
+.act-btn.gd:hover{background:var(--gdl-light);color:var(--gdl-dark);color:var(--gdl-dark)!important}
+.act-btn:disabled{background:transparent!important;color:#cfd8dc!important}
+.files{background:#f8faff;padding:2px 22px 16px;display:none}
+.pkg.open .files{display:block}
+.file{display:flex;align-items:center;gap:12px;padding:9px 6px;border-bottom:1px dashed var(--divider);font-size:13px}
+.file:last-child{border-bottom:none}
+.file .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file .fb{width:90px}
+.pkg-foot{padding:14px 22px 18px;background:#fafcff;display:none}
+.pkg.open .pkg-foot{display:block}
+.files-loading{padding:16px 6px;color:var(--text-3);text-align:center;display:flex;align-items:center;justify-content:center;gap:10px}
+.spinner{width:18px;height:18px;border:3px solid var(--primary-light);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- Forms ---------- */
+textarea,.input{width:100%;border:2px solid var(--divider);border-radius:var(--radius-s);padding:12px 14px;font-family:inherit;font-size:14px;color:var(--text);background:#fafbfe;transition:border-color .15s}
+textarea{min-height:110px;resize:vertical}
+textarea:focus,.input:focus{outline:none;border-color:var(--primary);background:#fff}
+label.f{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-2);cursor:pointer;margin-top:12px}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary);cursor:pointer;flex:none}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.btn{background:var(--primary);padding:12px 22px;border-radius:999px;font-weight:700;font-size:14px;box-shadow:var(--shadow-1);display:inline-flex;align-items:center;gap:8px}
+.btn:hover{box-shadow:var(--shadow-2)}
+.btn.tonal{background:var(--indigo-100);color:var(--primary-dark)}
+.btn.gd{background:var(--gdl)}
+.btn.success{background:var(--success)}
+.btn.sm{padding:8px 14px;font-size:12.5px}
+.btn.outline{background:#fff;color:var(--primary-dark);border:2px solid var(--primary-light)}
+.sub-inline{display:flex;gap:10px}
+.sub-inline .input{flex:1}
+
+/* ---------- Snackbar ---------- */
+#snack{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(150%);background:#323232;color:#fff;
+  padding:14px 20px;border-radius:12px;box-shadow:var(--shadow-3);z-index:100;display:flex;align-items:center;gap:12px;
+  max-width:min(92vw,560px);transition:transform .3s ease}
+#snack.show{transform:translateX(-50%) translateY(0)}
+#snack.ok{border-left:6px solid var(--success)}
+#snack.err{border-left:6px solid var(--error)}
+#snack .msg{font-size:14px}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.section-tools{display:flex;align-items:center;gap:12px;margin-left:auto;flex-wrap:wrap}
+.check-white{display:flex;align-items:center;gap:8px;color:#eee;font-size:13px;cursor:pointer}
+.check-white input{accent-color:#fff}
+.empty{padding:36px;text-align:center;color:var(--text-3)}
+.empty svg{color:#cfd8dc;margin-bottom:10px}
+.queue-note{padding:10px 22px;background:var(--warn-light);color:#e65100;font-size:12.5px;font-weight:600;display:none;border-top:1px solid var(--divider)}
+.queue-note.show{display:block}
+.datalist-hint{font-size:12px;color:var(--text-3);margin-top:6px;display:flex;align-items:center;gap:6px}
+::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-thumb{background:#cfd8dc;border-radius:8px}
+input[type=checkbox]:disabled{accent-color:#b0bec5}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <div class="brand">
+      <div class="logo">JD<span style="color:var(--gdl)">+</span></div>
+      <div>
+        <h1>Download Hub</h1>
+        <small>JDownloader · gallery-dl</small>
+      </div>
+    </div>
+
+    <div class="conn" id="connBox"><span class="dot" id="connDot"></span><span id="connText">Verbindung…</span></div>
+    <div class="stat"><div class="k">Gesamtspeed</div><div class="v" id="statSpeed">—</div></div>
+    <div class="stat"><div class="k">Frei</div><div class="v small" id="statFree">—</div></div>
+    <div class="stat"><div class="k">Belegt</div><div class="v small" id="statUsed">—</div></div>
+
+    <div class="topbar" id="ctlButtons">
+      <button class="icon-btn" data-action="pause" title="Pause"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
+      <button class="icon-btn" data-action="resume" title="Resume"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+
+    <!-- ============ Downloads column ============ -->
+    <section>
+      <div class="card">
+        <div class="card-head">
+          <h2><span class="mdis">↧</span> Downloads</h2>
+          <div class="section-tools">
+            <label class="seg" id="dlSeg">
+              <button data-mode="active" class="active">Aktiv</button>
+              <button data-mode="all">Alle</button>
+            </label>
+            <label class="seg" id="hoursSeg">
+              <button data-h="24" class="active">24h</button>
+              <button data-h="0">∞</button>
+            </label>
+          </div>
+        </div>
+        <div class="queue-note" id="queueNote"></div>
+        <div id="dlList"><div class="files-loading"><div class="spinner"></div> Lade Downloads…</div></div>
+      </div>
+    </section>
+
+    <!-- ============ Sidebar: add + linkgrabber ============ -->
+    <section>
+      <div class="card" style="margin-bottom:22px">
+        <div class="card-head"><h2><span class="mdis">➕</span> Hinzufügen</h2></div>
+        <div style="padding:20px 22px">
+          <label class="tiny" for="addLinks">Links (eine pro Zeile)</label>
+          <textarea id="addLinks" placeholder="https://…&#10;https://…"></textarea>
+
+          <label class="f" for="destInput">📁 Zielordner</label>
+          <div class="sub-inline" style="margin-top:8px">
+            <input class="input" id="destInput" list="folderList" placeholder="Standard / wählen…">
+            <datalist id="folderList"></datalist>
+            <button class="btn tonal sm" id="newFolderBtn" title="Ordner anlegen / frische Liste">Neuer</button>
+          </div>
+          <div class="datalist-hint"><span>Aus Ordnerliste oder neuen Ordner anlegen</span></div>
+
+          <label class="f"><input type="checkbox" id="autostart"> Automatisch starten</label>
+          <label class="f"><input type="checkbox" id="videosOnly"> Nur Videos</label>
+
+          <div class="btn-row">
+            <button class="btn" id="addBtn">Link hinzufügen</button>
+            <button class="btn tonal" id="clearBtn">Leeren</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2><span class="mdis">🗂</span> Linkgrabber</h2>
+          <div class="section-tools">
+            <label class="check-white" id="offlineWrap" style="color:var(--text-2)">
+              <input type="checkbox" id="forceOffline"> force-offline
+            </label>
+            <button class="btn success sm" id="dlAllBtn">Alle laden</button>
+          </div>
+        </div>
+        <div id="lgList"><div class="files-loading"><div class="spinner"></div> Lade…</div></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div id="snack"><span class="msg"></span></div>
+
+<script>
+'use strict';
+
+/* ---------- tiny helpers ---------- */
+const $  = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
+
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>(
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
+const state = {
+  mode:'active', hours:24,
+  dlData:[], lgData:[],
+  openDl:new Set(), openLg:new Set(),
+  offlineForce:false, videosOnly:false, autostart:false,
+  dlFilesCache:{}, lgFilesCache:{},
+  busy:new Set()
+};
+
+function toast(msg, ok=true){
+  const s=$('#snack');
+  s.className = ok?'show ok':'show err';
+  $('.msg',s).textContent = msg;
+  clearTimeout(s._t);
+  s._t = setTimeout(()=>s.className='', 3200);
+}
+
+/* ---------- HTTP ---------- */
+async function api(path, opts={}){
+  const init = {headers:{}, ...opts};
+  if(init.body) init.headers['Content-Type']='application/json';
+  const res = await fetch(path, init);
+  const ct = res.headers.get('content-type')||'';
+  const data = ct.includes('json') ? await res.json() : {detail: await res.text()};
+  if(!res.ok){
+    const d = data.detail || data.message || res.status;
+    throw new Error(typeof d==='string'?d:JSON.stringify(d));
+  }
+  return data;
+}
+const post = (p,b={})=>api(p,{method:'POST',body:JSON.stringify(b)});
+
+/* used to fire actions once per click (guarded) */
+async function act(key, fn){
+  if(state.busy.has(key)) return;
+  state.busy.add(key);
+  try{ const r = await fn(); toast(r.message||'OK'); refresh(true); }
+  catch(e){ toast(e.message||'Fehler', false); }
+  finally{ state.busy.delete(key); }
+}
+
+/* ---------- Status / App bar ---------- */
+async function loadStatus(){
+  try{
+    const s = await api('/api/status');
+    $('#connDot').className = 'dot ' + (s.connected?'on':'off');
+    $('#connText').textContent = s.connected ? ('Online · '+(s.state||'')) : 'Offline';
+    $('#statSpeed').textContent = s.speed_formatted || '0 B/s';
+    const d = s.disk;
+    if(d){
+      $('#statFree').textContent = d.free_formatted||'—';
+      $('#statUsed').textContent = d.used_formatted||'—';
+    }
+    $('#ctlButtons').style.display = s.connected?'flex':'none';
+  }catch(e){
+    $('#connDot').className='dot off';
+    $('#connText').textContent='Offline';
+  }
+}
+
+/* ---------- Downloads ---------- */
+function gdlChip(pkg){
+  return `<span class="chip gd"><svg class="icon" viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29S22 12 22 8V6h-6z"/></svg>gallery-dl</span>`;
+}
+function jdChip(){
+  return `<span class="chip jd"><svg class="icon" viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>JD</span>`;
+}
+function isGdl(p){
+  return (p.source==='gallery-dl') || String(p.uuid||'').startsWith('gdl_');
+}
+function catTag(cat){
+  const m={'running':'Running','error':'Fehler','finished':'Fertig','queued':'Wartend','ready':'Fertig','crawling':'Crawl'};
+  return `<span class="tag ${cat}"><svg class="icon" viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>${m[cat]||esc(cat)}</span>`;
+}
+
+function renderDownloads(){
+  const list = $('#dlList');
+  if(!state.dlData.length){
+    list.innerHTML = `<div class="empty"><svg class="icon" viewBox="0 0 24 24" width="48" height="48"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><div>Keine Downloads</div></div>`;
+    return;
+  }
+  list.innerHTML = state.dlData.map((p,i)=>pkgCard(p,i)).join('');
+}
+
+function pkgCard(p, i){
+  const gdl = isGdl(p);
+  const cat = p.category==='running' ? 'running' : p.category==='error' ? 'error' : p.category==='finished' ? 'finished' : 'queued';
+  const open = state.openDl.has(p.uuid) ? ' open':'';
+  const cl = ['pkg', gdl?'pgdl':'', cat==='error'?'perr':'', cat==='finished'?'pdone':'', open].join(' ').trim();
+
+  const filesBtn = (gdl && p.category==='finished' && (p.files||[]).length)
+    ? `<button class="act-btn" data-open i="${i}" title="Dateien"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 2c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/></svg></button>`
+    : '';
+
+  let actions = '';
+  if(gdl){
+    actions += `
+      <button class="act-btn" data-open i="${i}" title="Dateien"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 6H4v2h16V6zm-2-3H6v2h12V3zm-2 6v10H8V9h8zm2-2H4v2h4v12h8V9h4V7z"/></svg></button>
+      <button class="act-btn gd" data-act="retry" data-u="${esc(p.uuid)}" data-i="${i}" ${p.category==='running'||p.category==='crawling'?'disabled':''} title="Retry"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
+      <button class="act-btn danger" data-act="delete" data-u="${esc(p.uuid)}" data-src="gallery-dl" data-i="${i}" title="Löschen"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>`;
+  }else{
+    const pri = p.is_prioritized;
+    const priBtn = pri
+      ? `<button class="act-btn pri active" data-act="prioritize" data-u="${esc(p.uuid)}" data-i="${i}" title="Priorität: ${esc(p.priority||'DEFAULT')} · klick um zurückzusetzen"><strong>★</strong></button>`
+      : `<button class="act-btn" data-act="prioritize" data-u="${esc(p.uuid)}" data-i="${i}" title="Priorisieren"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>`;
+    actions = `
+      ${priBtn}
+      <button class="act-btn" data-act="move" data-u="${esc(p.uuid)}" data-d="up" data-i="${i}" title="Nach oben"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg></button>
+      <button class="act-btn" data-act="move" data-u="${esc(p.uuid)}" data-d="down" data-i="${i}" title="Nach unten"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg></button>
+      <button class="act-btn" data-open i="${i}" title="Dateien"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 6H4v2h16V6zm-2-3H6v2h12V3zm-2 6v10H8V9h8zm2-2H4v2h4v12h8V9h4V7z"/></svg></button>
+      <button class="act-btn danger" data-act="delete" data-u="${esc(p.uuid)}" data-src="downloads" data-i="${i}" title="Löschen"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>`;
+  }
+
+  const openBtn = `<button class="act-btn" data-open i="${i}" title="Details"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg></button>`;
+
+  return `
+  <div class="${cl}" data-uuid="${esc(p.uuid)}" data-i="${i}" data-gdl="${gdl?'1':'0'}">
+    <div class="pkg-top">
+      <div class="pkg-info" data-open i="${i}">
+        <div class="pkg-title">
+          ${gdl?gdlChip(p):jdChip()}
+          ${catTag(cat)}
+          <span class="name" title="${esc(p.name)}">${esc(p.name)}</span>
+        </div>
+        <div class="pkg-meta">
+          <span><b>${esc(p.percent||0)}%</b></span>
+          <span>${esc(p.bytes_loaded_formatted||'0 B')} / ${esc(p.bytes_total_formatted||'--')}</span>
+          ${p.speed_formatted?`<span>⚡ ${esc(p.speed_formatted)}</span>`:''}
+          ${p.eta_formatted?`<span>⏱ ${esc(p.eta_formatted)}</span>`:''}
+          <span>${esc(p.files_done||0)}/${esc(p.files_total||0)} Dateien</span>
+          <span class="tiny">${esc(p.status||'')}</span>
+        </div>
+        <div class="pbar"><div style="width:${Math.min(100,+(p.percent||0))}%"></div></div>
+      </div>
+      <div class="actions">
+        ${filesBtn}
+        ${actions}
+        ${openBtn}
+      </div>
+    </div>
+    <div class="files" id="files-${i}"><div class="files-loading"><div class="spinner"></div> Dateien…</div></div>
+  </div>`;
+}
+
+async function loadFiles(i){
+  const p = state.dlData[i];
+  if(!p) return;
+  const box = document.getElementById('files-'+i);
+  if(!box) return;
+  box.innerHTML = `<div class="files-loading"><div class="spinner"></div> Dateien…</div>`;
+  try{
+    const r = await api('/api/downloads/files?package_uuid='+encodeURIComponent(p.uuid)+'&source='+(isGdl(p)?'gallery-dl':'downloads'));
+    state.dlFilesCache[p.uuid] = r.files||[];
+    box.innerHTML = renderFileRows(r.files||[], i);
+  }catch(e){
+    box.innerHTML = `<div class="files-loading">${esc(e.message||'Fehler')}</div>`;
+  }
+}
+
+function renderFileRows(files, i){
+  if(!files.length) return `<div class="files-loading">Keine Dateien</div>`;
+  return files.map(f=>{
+    const st = f.finished?`<span class="tag finished">OK</span>` : f.running?`<span class="tag running">…</span>` : `<span class="tag queued">—</span>`;
+    return `<div class="file">
+      <span class="fn" title="${esc(f.name)}">${st} ${esc(f.name)}</span>
+      <span class="fb tiny">${Math.round(f.percent||0)}%</span>
+      <span class="tiny">${esc(f.bytes_loaded_formatted||'')}${f.bytes_total_formatted?' / '+esc(f.bytes_total_formatted):''}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadDownloads(){
+  try{
+    const r = await api(`/api/downloads?mode=${state.mode}&hours=${state.hours}`);
+    state.dlData = r.items||[];
+    renderDownloads();
+    const q = r.queue_info;
+    const qn = $('#queueNote');
+    if(q && (q.queue_remaining_bytes||0) > 0){
+      qn.className='queue-note show';
+      qn.innerHTML = `💾 Nach Download: <b>${esc(q.after_download_free_formatted)}</b> frei · Rest noch <b>${esc(q.queue_remaining_formatted)}</b> in Warteschlange ${q.sufficient_space?'':'· ⚠️ Platz könnte knapp werden'}`;
+    }else qn.className='queue-note';
+  }catch(e){
+    $('#dlList').innerHTML = `<div class="empty">Downloads nicht erreichbar<br><span class="tiny">${esc(e.message||'')}</span></div>`;
+  }
+}
+
+/* ---------- Linkgrabber ---------- */
+function renderLinkgrabber(){
+  const list = $('#lgList');
+  if(!state.lgData.length){
+    list.innerHTML = `<div class="empty"><svg class="icon" viewBox="0 0 24 24" width="44" height="44"><path fill="currentColor" d="M3.9 12c0-4.42 3.58-8 8-8 1.96 0 3.76.7 5.15 1.86L12 11.74V4c-4.42 0-8 3.58-8 8 0 1.28.3 2.48.84 3.55l-1.5 1.5A9.95 9.95 0 0 1 3.9 12zm19 .01c0 .02 0 .01 0 0zm-1 0c0-1.28-.3-2.48-.84-3.55l1.5-1.5A9.95 9.95 0 0 1 20.1 12c0 4.42-3.58 8-8 8-1.96 0-3.76-.7-5.15-1.86l4.05-5.88 5.88-4.05c1.55 1.4 2.55 3.3 2.62 5.79h2z"/></svg><div>Linkgrabber leer</div></div>`;
+    return;
+  }
+  list.innerHTML = state.lgData.map((p,i)=>lgCard(p,i)).join('');
+}
+
+function lgCard(p, i){
+  const gdl = isGdl(p);
+  const crawling = p.crawling;
+  const catcl = crawling?'crawling':p.is_error?'error':'ready';
+  const open = state.openLg.has(p.uuid)?' open':'';
+  const img = `<svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`;
+  return `
+  <div class="pkg ${gdl?'pgdl':''} ${open}" data-uuid="${esc(p.uuid)}" data-i="${i}">
+    <div class="pkg-top">
+      <div class="pkg-info" data-lgopen i="${i}">
+        <div class="pkg-title">
+          ${gdl?gdlChip(p):jdChip()}
+          ${catTag(catcl)}
+          <span class="name" title="${esc(p.name)}">${esc(p.name)}</span>
+        </div>
+        <div class="pkg-meta">
+          <span>${esc(p.files_total||0)} Dateien</span>
+          <span>${esc(p.bytes_total_formatted||'--')}</span>
+          ${p.save_to?`<span class="tiny">📁 ${esc(p.save_to)}</span>`:''}
+          <span class="tiny">${esc(p.status||'')}</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="act-btn" data-lgopen i="${i}" title="Zielordner ändern"><svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 6H4V6h16v4z"/></svg></button>
+        <button class="btn success sm" style="border-radius:12px;padding:8px 16px;height:38px" data-act="lgdl" data-u="${esc(p.uuid)}" data-i="${i}" ${crawling?'disabled':''}>Download</button>
+      </div>
+    </div>
+    <div class="files"><div class="sub-inline" style="padding:4px 0">
+      <input class="input" list="folderList" placeholder="Zielordner…" data-lgdest>
+      <button class="btn tonal sm" data-lgsetdir data-u="${esc(p.uuid)}" data-i="${i}">Setzen</button>
+    </div></div>
+  </div>`;
+}
+
+async function loadLinkgrabber(){
+  try{
+    const r = await api('/api/linkgrabber');
+    state.lgData = r.items||[];
+    renderLinkgrabber();
+  }catch(e){
+    $('#lgList').innerHTML = `<div class="empty">Linkgrabber nicht erreichbar<br><span class="tiny">${esc(e.message||'')}</span></div>`;
+  }
+}
+
+/* ---------- Folders ---------- */
+async function loadFolders(select){
+  try{
+    const r = await api('/api/folders');
+    const names = r.folders||[];
+    $('#folderList').innerHTML = names.map(n=>`<option value="${esc(n)}">`).join('');
+    if(select && names.length) $('#destInput').value = names[0];
+  }catch(e){}
+}
+
+async function openNewFolder(){
+  const name = prompt('Neuer Ordnername:');
+  if(!name) return;
+  try{
+    const r = await post('/api/folders/create',{name});
+    $('#destInput').value = r.name;
+    toast(r.message||'Ordner angelegt');
+    loadFolders();
+  }catch(e){ toast(e.message||'Fehler', false); }
+}
+
+/* ---------- Actions ---------- */
+function confirmDelete(pkg){
+  return confirm(`Paket „${pkg.name}" wirklich löschen?`);
+}
+
+async function handleDlAction(btn){
+  const el = btn;
+  const key = 'a'+Math.random();
+  const u = el.dataset.u;
+  const src = el.dataset.src;
+  const i = +el.dataset.i;
+  const p = state.dlData[i];
+
+  if(el.dataset.act==='prioritize'){
+    await act(key, ()=>post('/api/downloads/prioritize',{package_uuid:u}));
+    return;
+  }
+  if(el.dataset.act==='move'){
+    await act(key, ()=>post('/api/downloads/move',{package_uuid:u, direction:el.dataset.d}));
+    return;
+  }
+  if(el.dataset.act==='delete'){
+    if(!p || !confirmDelete(p)) return;
+    await act(key, ()=>post('/api/downloads/delete',{package_uuid:u, source:src}));
+    return;
+  }
+  if(el.dataset.act==='retry'){
+    await act(key, ()=>post('/api/downloads/retry',{package_uuid:u, source:'gallery-dl'}));
+    return;
+  }
+}
+
+async function openPackage(i, isDl){
+  if(isDl){
+    const p = state.dlData[i]; if(!p) return;
+    if(state.openDl.has(p.uuid)) state.openDl.delete(p.uuid);
+    else { state.openDl.add(p.uuid); loadFiles(i); }
+    renderDownloads();
+  }else{
+    const p = state.lgData[i]; if(!p) return;
+    if(state.openLg.has(p.uuid)) state.openLg.delete(p.uuid);
+    else state.openLg.add(p.uuid);
+    renderLinkgrabber();
+  }
+}
+
+async function handleLgAction(btn){
+  const u = btn.dataset.u;
+  const i = +btn.dataset.i;
+  const key = 'lg'+Math.random();
+  if(btn.dataset.act==='lgdl'){
+    await act(key, ()=>post('/api/linkgrabber/download',{package_ids:[u], force_offline:state.offlineForce, videos_only:state.videosOnly}));
+    return;
+  }
+  if(btn.dataset.lgsetdir){
+    const row = btn.closest('.pkg');
+    const inp = $('[data-lgdest]', row);
+    const dir = inp.value.trim();
+    if(!dir){ toast('Bitte Ordner wählen', false); return; }
+    await act(key, ()=>post('/api/linkgrabber/set-directory',{package_uuid:u, directory:dir}));
+    return;
+  }
+}
+
+async function downloadAll(){
+  const key = 'dlall';
+  await act(key, ()=>post('/api/linkgrabber/download',{download_all:true, force_offline:state.offlineForce, videos_only:state.videosOnly}));
+}
+
+async function addLinks(){
+  const text = $('#addLinks').value.trim();
+  if(!text){ toast('Bitte mindestens einen Link eingeben', false); return; }
+  const links = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const dest = $('#destInput').value.trim();
+  const body = {links, autostart:$('#autostart').checked, videos_only:$('#videosOnly').checked};
+  if(dest) body.destination_folder = dest;
+  const key='add';
+  await act(key, async()=>{
+    const r = await post('/api/links', body);
+    if(!r.success){ throw new Error(r.message||'Fehler'); }
+    return r;
+  });
+  $('#addLinks').value='';
+  loadLinkgrabber();
+}
+
+/* ---------- Polling ---------- */
+let timer=null;
+let lastStatus=0;
+async function tick(){
+  await Promise.all([loadStatus(), loadDownloads(), loadLinkgrabber()]);
+}
+function refresh(fast){
+  clearTimeout(timer);
+  timer = setTimeout(tick, fast?500:0);
+}
+function startPolling(){
+  tick();
+  const iv = ()=>tick();
+  setInterval(()=>{ iv(); }, state.mode==='active'?4000:3500);
+}
+
+/* ---------- Events ---------- */
+function bind(){
+  // downloads mode/hours segmented
+  $('#dlSeg').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    state.mode=b.dataset.mode;
+    $$('#dlSeg button').forEach(x=>x.classList.toggle('active',x===b));
+    tick();
+  });
+  $('#hoursSeg').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    state.hours=+b.dataset.h;
+    $$('#hoursSeg button').forEach(x=>x.classList.toggle('active',x===b));
+    tick();
+  });
+
+  // global click delegation
+  document.addEventListener('click', async e=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+
+    // primary actions
+    if(btn.hasAttribute('data-act')){ await handleDlAction(btn); return; }
+    if(btn.hasAttribute('data-lgsetdir') || btn.dataset.act==='lgdl'){ await handleLgAction(btn); return; }
+
+    // open toggles
+    if(btn.hasAttribute('data-open')){
+      openPackage(+btn.dataset.i, true); return;
+    }
+    if(btn.hasAttribute('data-lgopen')){
+      openPackage(+btn.dataset.i, false); return;
+    }
+
+    if(btn.id==='addBtn'){ addLinks(); return; }
+    if(btn.id==='clearBtn'){ $('#addLinks').value=''; return; }
+    if(btn.id==='newFolderBtn'){ openNewFolder(); return; }
+    if(btn.id==='dlAllBtn'){ downloadAll(); return; }
+    if(btn.dataset.action){ const a=btn.dataset.action; post('/api/control',{action:a}).catch(e=>toast(e.message,false)); refresh(true); }
+  });
+
+  // pkg-info click to open (clickable name area)
+  document.addEventListener('click', async e=>{
+    const info = e.target.closest('.pkg-info');
+    if(!info) return;
+    if(info.hasAttribute('data-open')) openPackage(+info.dataset.i, true);
+    else if(info.hasAttribute('data-lgopen')) openPackage(+info.dataset.i, false);
+  });
+
+  // force-offline checkbox
+  $('#forceOffline').addEventListener('change', e=>state.offlineForce=e.target.checked);
+
+  // dest input: Enter in target field triggers nothing special
+  $('#addLinks').addEventListener('keydown', e=>{ if(e.key==='Tab' && !e.shiftKey){ e.preventDefault(); $('#autostart').focus(); } });
+}
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+  bind();
+  await loadFolders(true);
+  startPolling();
+});
+</script>
+</body>
+</html>

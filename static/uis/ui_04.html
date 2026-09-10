@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CYBERDWN // Neon Control Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ===== CYBERPUNK NEON RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--bg2:#0d0d14;--bg3:#12121c;--bg4:#18182a;
+  --cyan:#00f0ff;--cyan-dim:#00f0ff88;--cyan-glow:0 0 12px #00f0ff88,0 0 30px #00f0ff33;
+  --magenta:#ff00e5;--magenta-dim:#ff00e588;--magenta-glow:0 0 12px #ff00e588,0 0 30px #ff00e533;
+  --pink:#ff3cac;--pink-dim:#ff3cac88;
+  --green:#39ff14;--green-dim:#39ff1488;
+  --yellow:#ffe600;--yellow-dim:#ffe60088;
+  --red:#ff1744;--red-dim:#ff174488;
+  --text:#e0e0f0;--text-dim:#8888aa;--text-muted:#555570;
+  --border:#1e1e3a;--border-glow:#00f0ff22;
+  --card-bg:#0e0e1aCC;--card-border:#1a1a3a;
+  --font-display:'Orbitron',monospace;--font-body:'Rajdhani',sans-serif;--font-mono:'Share Tech Mono',monospace;
+  --radius:2px;
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font-body);
+  min-height:100vh;overflow-x:hidden;line-height:1.4;
+}
+/* Glitch scanlines */
+body::before{
+  content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,240,255,.015) 2px,rgba(0,240,255,.015) 4px);
+}
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--cyan-dim);border-radius:0}
+::-webkit-scrollbar-thumb:hover{background:var(--cyan)}
+
+/* ===== GLITCH KEYFRAMES ===== */
+@keyframes glitch{
+  0%,100%{text-shadow:2px 0 var(--cyan),-2px 0 var(--magenta)}
+  25%{text-shadow:-2px -1px var(--magenta),2px 1px var(--cyan)}
+  50%{text-shadow:1px 2px var(--cyan),-1px -2px var(--magenta)}
+  75%{text-shadow:-1px 0 var(--magenta),1px 0 var(--cyan)}
+}
+@keyframes neonPulse{
+  0%,100%{opacity:1}50%{opacity:.7}
+}
+@keyframes borderGlow{
+  0%,100%{border-color:var(--cyan-dim);box-shadow:0 0 8px var(--cyan-dim)}
+  50%{border-color:var(--magenta-dim);box-shadow:0 0 8px var(--magenta-dim)}
+}
+@keyframes slideDown{
+  from{max-height:0;opacity:0}to{max-height:2000px;opacity:1}
+}
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}
+}
+@keyframes scanline{
+  0%{top:-100%}100%{top:200%}
+}
+@keyframes bgShift{
+  0%{background-position:0% 0%}50%{background-position:100% 100%}100%{background-position:0% 0%}
+}
+
+/* ===== LAYOUT ===== */
+.container{max-width:1100px;margin:0 auto;padding:12px 16px 40px}
+
+/* ===== HEADER ===== */
+.header{
+  background:linear-gradient(135deg,var(--bg3) 0%,var(--bg2) 50%,#0c0c18 100%);
+  border:1px solid var(--border);border-bottom:2px solid var(--cyan-dim);
+  padding:16px 20px;margin-bottom:20px;position:relative;overflow:hidden;
+}
+.header::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cyan),var(--magenta),var(--cyan),transparent);
+}
+.header-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.logo{font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--cyan);letter-spacing:3px;text-shadow:var(--cyan-glow)}
+.logo span{color:var(--magenta)}
+.status-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.status-dot{width:10px;height:10px;border-radius:0;display:inline-block;margin-right:6px}
+.status-dot.online{background:var(--green);box-shadow:0 0 8px var(--green);animation:neonPulse 2s infinite}
+.status-dot.offline{background:var(--red);box-shadow:0 0 8px var(--red)}
+.conn-label{font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim)}
+.stat-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 10px;border:1px solid var(--border);background:var(--bg);
+  font-family:var(--font-mono);font-size:.8rem;
+}
+.stat-chip .val{color:var(--cyan);font-weight:600}
+.header-controls{display:flex;gap:8px;margin-top:10px}
+.ctrl-btn{
+  font-family:var(--font-display);font-size:.7rem;font-weight:600;
+  padding:6px 16px;border:1px solid var(--cyan-dim);background:transparent;
+  color:var(--cyan);cursor:pointer;letter-spacing:1px;text-transform:uppercase;
+  transition:all .15s;position:relative;overflow:hidden;
+}
+.ctrl-btn:hover{background:var(--cyan);color:var(--bg);box-shadow:var(--cyan-glow)}
+.ctrl-btn.danger{border-color:var(--red-dim);color:var(--red)}
+.ctrl-btn.danger:hover{background:var(--red);color:#fff}
+.ctrl-btn.active{background:var(--cyan);color:var(--bg)}
+
+/* ===== SECTION HEADERS ===== */
+.section{
+  margin-bottom:20px;border:1px solid var(--border);background:var(--card-bg);
+  position:relative;overflow:hidden;
+}
+.section::before{
+  content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--cyan);
+}
+.section.gdl::before{background:var(--magenta)}
+.section-title{
+  font-family:var(--font-display);font-size:.85rem;font-weight:700;
+  padding:12px 16px 12px 20px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--cyan);display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);cursor:default;
+}
+.section.gdl .section-title{color:var(--magenta)}
+.section-title .count{
+  font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim);
+  padding:2px 8px;border:1px solid var(--border);
+}
+.section-body{padding:0}
+
+/* ===== MODE TABS ===== */
+.tab-bar{display:flex;gap:0;margin:0}
+.tab-btn{
+  font-family:var(--font-display);font-size:.65rem;font-weight:600;
+  padding:8px 14px;background:transparent;border:none;border-bottom:2px solid transparent;
+  color:var(--text-dim);cursor:pointer;letter-spacing:1px;text-transform:uppercase;
+  transition:all .15s;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+
+/* ===== PACKAGE CARD ===== */
+.pkg{
+  border-bottom:1px solid var(--border);padding:10px 16px 10px 20px;
+  transition:background .15s;position:relative;
+}
+.pkg:hover{background:var(--bg3)}
+.pkg:last-child{border-bottom:none}
+.pkg-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}
+.pkg-tag{
+  font-family:var(--font-display);font-size:.6rem;font-weight:700;
+  padding:2px 6px;letter-spacing:1px;border:1px solid;flex-shrink:0;
+}
+.pkg-tag.jd{color:var(--cyan);border-color:var(--cyan-dim);text-shadow:0 0 6px var(--cyan-dim)}
+.pkg-tag.gdl{color:var(--magenta);border-color:var(--magenta-dim);text-shadow:0 0 6px var(--magenta-dim)}
+.pkg-name{
+  font-family:var(--font-body);font-size:.9rem;font-weight:600;color:var(--text);
+  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pkg-status-badge{
+  font-family:var(--font-mono);font-size:.7rem;padding:2px 8px;
+  border:1px solid;white-space:nowrap;flex-shrink:0;
+}
+.pkg-status-badge.running{color:var(--green);border-color:var(--green-dim)}
+.pkg-status-badge.error{color:var(--red);border-color:var(--red-dim)}
+.pkg-status-badge.finished{color:var(--text-dim);border-color:var(--border)}
+.pkg-status-badge.queued{color:var(--yellow);border-color:var(--yellow-dim)}
+.pkg-status-badge.crawling{color:var(--pink);border-color:var(--pink-dim)}
+.pkg-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim)}
+.pkg-meta .val{color:var(--cyan)}
+.pkg-meta .pct{font-weight:700}
+
+/* Progress bar */
+.progress-wrap{margin-top:6px;height:4px;background:var(--bg);border:1px solid var(--border);overflow:hidden;position:relative}
+.progress-bar{height:100%;transition:width .3s;position:relative}
+.progress-bar.cyan{background:linear-gradient(90deg,var(--cyan),var(--cyan-dim));box-shadow:0 0 8px var(--cyan-dim)}
+.progress-bar.magenta{background:linear-gradient(90deg,var(--magenta),var(--magenta-dim));box-shadow:0 0 8px var(--magenta-dim)}
+.progress-bar.green{background:var(--green);box-shadow:0 0 8px var(--green-dim)}
+.progress-bar.red{background:var(--red)}
+.progress-bar.yellow{background:var(--yellow)}
+
+/* Actions row */
+.pkg-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.action-btn{
+  font-family:var(--font-display);font-size:.55rem;font-weight:600;
+  padding:4px 10px;background:transparent;border:1px solid var(--border);
+  color:var(--text-dim);cursor:pointer;letter-spacing:1px;text-transform:uppercase;
+  transition:all .12s;
+}
+.action-btn:hover{border-color:var(--cyan-dim);color:var(--cyan);box-shadow:0 0 6px var(--cyan-dim)}
+.action-btn.gdl-action:hover{border-color:var(--magenta-dim);color:var(--magenta);box-shadow:0 0 6px var(--magenta-dim)}
+.action-btn.delete-action:hover{border-color:var(--red-dim);color:var(--red);box-shadow:0 0 6px var(--red-dim)}
+
+/* Expandable files */
+.files-panel{
+  margin-top:8px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);
+  display:none;animation:slideDown .25s;
+}
+.files-panel.open{display:block}
+.file-row{
+  display:flex;align-items:center;gap:8px;padding:3px 0;
+  font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim);
+  border-bottom:1px solid var(--border);
+}
+.file-row:last-child{border-bottom:none}
+.file-row .fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-row .fstat{color:var(--cyan);white-space:nowrap}
+
+/* ===== LINKGRABBER ===== */
+.lg-card{
+  border-bottom:1px solid var(--border);padding:10px 16px 10px 20px;transition:background .15s;
+}
+.lg-card:hover{background:var(--bg3)}
+.lg-card:last-child{border-bottom:none}
+.lg-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lg-save{font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);margin-top:4px;word-break:break-all}
+.lg-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+/* ===== ADD LINKS ===== */
+.add-section{
+  margin-bottom:20px;border:1px solid var(--border);background:var(--card-bg);
+  position:relative;overflow:hidden;
+}
+.add-section::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--pink)}
+.form-group{padding:12px 16px 12px 20px}
+.form-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.form-label{font-family:var(--font-display);font-size:.65rem;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase;min-width:80px}
+textarea.neon-input, input.neon-input, select.neon-input{
+  font-family:var(--font-mono);font-size:.85rem;
+  background:var(--bg);color:var(--text);border:1px solid var(--border);
+  padding:8px 12px;width:100%;outline:none;transition:border-color .15s,box-shadow .15s;
+  border-radius:var(--radius);
+}
+textarea.neon-input{resize:vertical;min-height:80px}
+textarea.neon-input:focus, input.neon-input:focus, select.neon-input:focus{
+  border-color:var(--cyan-dim);box-shadow:0 0 8px var(--cyan-dim);
+}
+.checkbox-group{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px}
+.cyber-check{display:flex;align-items:center;gap:6px;cursor:pointer}
+.cyber-check input[type=checkbox]{
+  appearance:none;width:14px;height:14px;border:1px solid var(--border);
+  background:var(--bg);cursor:pointer;position:relative;
+}
+.cyber-check input[type=checkbox]:checked{border-color:var(--cyan);background:var(--cyan)}
+.cyber-check input[type=checkbox]:checked::after{
+  content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:var(--bg);font-weight:700;
+}
+.cyber-check span{font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim)}
+.submit-btn{
+  font-family:var(--font-display);font-size:.75rem;font-weight:700;
+  padding:10px 28px;border:1px solid var(--cyan);background:transparent;
+  color:var(--cyan);cursor:pointer;letter-spacing:2px;text-transform:uppercase;
+  transition:all .15s;margin-top:6px;
+}
+.submit-btn:hover{background:var(--cyan);color:var(--bg);box-shadow:var(--cyan-glow)}
+.submit-btn:disabled{opacity:.4;cursor:not-allowed}
+.feedback{
+  margin-top:8px;padding:8px 12px;font-family:var(--font-mono);font-size:.78rem;
+  display:none;border:1px solid;
+}
+.feedback.ok{display:block;color:var(--green);border-color:var(--green-dim);background:rgba(57,255,20,.05)}
+.feedback.err{display:block;color:var(--red);border-color:var(--red-dim);background:rgba(255,23,68,.05)}
+
+/* ===== DISK BAR ===== */
+.disk-bar{margin-top:6px;height:8px;background:var(--bg);border:1px solid var(--border);overflow:hidden}
+.disk-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--magenta));transition:width .4s}
+
+/* ===== EMPTY STATE ===== */
+.empty{padding:20px;text-align:center;font-family:var(--font-mono);font-size:.8rem;color:var(--text-muted)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:600px){
+  .container{padding:8px}
+  .header{padding:12px}
+  .logo{font-size:1.1rem}
+  .stat-chip{font-size:.7rem;padding:3px 6px}
+  .pkg-name{font-size:.82rem}
+  .form-row{flex-direction:column;align-items:stretch}
+  .form-label{min-width:auto}
+}
+
+/* ===== LOADING SHIMMER ===== */
+.shimmer{
+  background:linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%);
+  background-size:200% 100%;animation:bgShift 1.5s infinite;
+  height:40px;margin:4px 16px;
+}
+
+/* ===== NETWORK ERROR FLASH ===== */
+.net-err-flash{
+  animation:borderGlow .5s 3;border-color:var(--red) !important;
+}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">CYBER<span>DWN</span></div>
+      <div class="status-bar">
+        <span><span class="status-dot" id="dot"></span><span class="conn-label" id="connLabel">connecting...</span></span>
+        <span class="stat-chip">▼ <span class="val" id="speedVal">—</span></span>
+        <span class="stat-chip">💾 <span class="val" id="diskVal">—</span></span>
+        <span class="stat-chip" id="diskPctChip">use <span class="val" id="diskPct">—</span></span>
+      </div>
+    </div>
+    <div class="disk-bar"><div class="disk-fill" id="diskBar" style="width:0"></div></div>
+    <div class="header-controls">
+      <button class="ctrl-btn" onclick="controlAction('start')">▶ START</button>
+      <button class="ctrl-btn" onclick="controlAction('pause')">❚❚ PAUSE</button>
+      <button class="ctrl-btn" onclick="controlAction('resume')">↻ RESUME</button>
+      <button class="ctrl-btn danger" onclick="controlAction('stop')">■ STOP</button>
+    </div>
+  </div>
+
+  <!-- DOWNLOADS SECTION -->
+  <div class="section" id="dlSection">
+    <div class="section-title">
+      <span>◈ DOWNLOADS</span>
+      <div class="tab-bar">
+        <button class="tab-btn active" data-mode="active" onclick="setDlMode('active',this)">ACTIVE</button>
+        <button class="tab-btn" data-mode="all" onclick="setDlMode('all',this)">ALL 24H</button>
+      </div>
+      <span class="count" id="dlCount">0</span>
+    </div>
+    <div class="section-body" id="dlList"><div class="shimmer"></div></div>
+  </div>
+
+  <!-- LINKGRABBER SECTION -->
+  <div class="section" id="lgSection">
+    <div class="section-title">
+      <span>◈ LINKGRABBER</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+          <input type="checkbox" id="lgForceOffline" style="accent-color:var(--magenta)">
+          <span style="font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim)">FORCE OFFLINE</span>
+        </label>
+        <button class="action-btn gdl-action" onclick="downloadAllLG()" style="font-size:.6rem">DOWNLOAD ALL</button>
+      </div>
+      <span class="count" id="lgCount">0</span>
+    </div>
+    <div class="section-body" id="lgList"><div class="shimmer"></div></div>
+  </div>
+
+  <!-- ADD LINKS SECTION -->
+  <div class="add-section">
+    <div class="section-title" style="color:var(--pink)">
+      <span>◈ ADD LINKS</span>
+    </div>
+    <div class="form-group">
+      <div style="margin-bottom:8px">
+        <textarea class="neon-input" id="addLinksInput" placeholder="Paste URLs here (one per line)&#10;gallery-dl URLs will be handled automatically..."></textarea>
+      </div>
+      <div class="form-row">
+        <span class="form-label">DEST</span>
+        <input class="neon-input" id="addDestInput" list="folderList" placeholder="Target folder (optional)" style="flex:1">
+        <datalist id="folderList"></datalist>
+        <button class="action-btn" onclick="createFolderPrompt()" style="white-space:nowrap">+ NEW</button>
+      </div>
+      <div class="checkbox-group">
+        <label class="cyber-check"><input type="checkbox" id="addAutostart" checked><span>Autostart</span></label>
+        <label class="cyber-check"><input type="checkbox" id="addVideosOnly"><span>Videos Only</span></label>
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:12px">
+        <button class="submit-btn" id="addSubmitBtn" onclick="submitLinks()">► SUBMIT</button>
+        <div class="feedback" id="addFeedback"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ===== UTILITY ===== */
+const $=s=>document.getElementById(s);
+const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
+function isGDL(pkg){return pkg.source==='gallery-dl'||(pkg.uuid&&pkg.uuid.toString().startsWith('gdl_'))}
+
+/* ===== STATE ===== */
+let dlMode='active';
+let pollTimer=null;
+let lastStatusTs=0;
+
+/* ===== API HELPER ===== */
+async function api(path,opts={}){
+  try{
+    const r=await fetch(path,{headers:{'Content-Type':'application/json'},...opts});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  }catch(e){
+    console.warn('[API]',path,e);
+    return null;
+  }
+}
+
+/* ===== STATUS ===== */
+async function pollStatus(){
+  const d=await api('/api/status');
+  if(!d){
+    $('dot').className='status-dot offline';
+    $('connLabel').textContent='OFFLINE';
+    $('speedVal').textContent='—';
+    $('diskVal').textContent='—';
+    $('diskPct').textContent='—';
+    $('diskBar').style.width='0';
+    return;
+  }
+  if(d.connected){$('dot').className='status-dot online';$('connLabel').textContent='ONLINE // '+esc(d.state||'')}else{$('dot').className='status-dot offline';$('connLabel').textContent='OFFLINE'}
+  $('speedVal').textContent=esc(d.speed_formatted||'0 B/s');
+  const dk=d.disk||{};
+  $('diskVal').textContent=esc(dk.free_formatted||'—');
+  const pct=dk.percent_used||0;
+  $('diskPct').textContent=esc(pct+'%');
+  $('diskBar').style.width=Math.min(pct,100)+'%';
+}
+
+/* ===== DOWNLOADS ===== */
+function setDlMode(mode,btn){
+  dlMode=mode;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  pollDownloads();
+}
+
+async function pollDownloads(){
+  const url=dlMode==='all'?'/api/downloads?mode=all&hours=24':'/api/downloads?mode=active';
+  const d=await api(url);
+  if(!d){$('dlList').innerHTML='<div class="empty">⚠ CONNECTION ERROR</div>';$('dlCount').textContent='0';return}
+  const items=d.items||[];
+  $('dlCount').textContent=items.length;
+  if(!items.length){$('dlList').innerHTML='<div class="empty">— NO DOWNLOADS —</div>';return}
+  let html='';
+  for(const p of items){
+    const gdl=isGDL(p);
+    const tag=gdl?'<span class="pkg-tag gdl">GDL</span>':'<span class="pkg-tag jd">JD</span>';
+    const cat=esc(p.category||'');
+    const pct=p.percent||0;
+    let barCls='cyan';
+    if(cat==='error')barCls='red';else if(cat==='finished')barCls='green';else if(cat==='queued')barCls='yellow';
+    if(gdl&&barCls==='cyan')barCls='magenta';
+    let pctColor=pct>=100?'var(--green)':pct>0?(gdl?'var(--magenta)':'var(--cyan)'):'var(--text-muted)';
+
+    html+=`<div class="pkg" id="pkg_${esc(p.uuid)}">
+      <div class="pkg-header" onclick="toggleFiles('${esc(p.uuid)}','${esc(p.source)}')">
+        ${tag}
+        <span class="pkg-name" title="${esc(p.name)}">${esc(p.name)}</span>
+        <span class="pkg-status-badge ${cat}">${esc(p.status||cat)}</span>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar ${barCls}" style="width:${pct}%"></div></div>
+      <div class="pkg-meta">
+        <span class="pct" style="color:${pctColor}">${pct.toFixed(1)}%</span>
+        <span>${esc(p.bytes_loaded_formatted||'0')} / ${esc(p.bytes_total_formatted||'—')}</span>
+        <span>▼ ${esc(p.speed_formatted||'—')}</span>
+        <span>⏱ ${esc(p.eta_formatted||'—')}</span>
+        <span>📎 ${esc(String(p.files_done||0))}/${esc(String(p.files_total||0))}</span>
+        ${p.is_prioritized?'<span style="color:var(--yellow)">★ '+esc(p.priority)+'</span>':''}
+      </div>
+      <div class="pkg-actions">${gdl?gdlActions(p):jdActions(p)}</div>
+      <div class="files-panel" id="files_${esc(p.uuid)}"></div>
+    </div>`;
+  }
+  $('dlList').innerHTML=html;
+}
+
+function jdActions(p){
+  const u=esc(p.uuid);
+  return `
+    <button class="action-btn" onclick="jdPrio('${u}')">★ PRIORITY</button>
+    <button class="action-btn" onclick="jdMove('${u}','up')">▲ UP</button>
+    <button class="action-btn" onclick="jdMove('${u}','down')">▼ DOWN</button>
+    <button class="action-btn delete-action" onclick="deletePkg('${u}','downloads')">✕ DELETE</button>
+  `;
+}
+function gdlActions(p){
+  const u=esc(p.uuid);
+  return `
+    <button class="action-btn gdl-action" onclick="gdlRetry('${u}')">↻ RETRY</button>
+    <button class="action-btn delete-action" onclick="deletePkg('${u}','gallery-dl')">✕ DELETE</button>
+  `;
+}
+
+async function toggleFiles(uuid,source){
+  const el=$('files_'+uuid);
+  if(!el)return;
+  if(el.classList.contains('open')){el.classList.remove('open');return}
+  el.innerHTML='<div class="shimmer" style="height:20px;margin:4px 0"></div>';
+  el.classList.add('open');
+  const d=await api(`/api/downloads/files?package_uuid=${encodeURIComponent(uuid)}&source=${encodeURIComponent(source)}`);
+  if(!d||!d.files||!d.files.length){el.innerHTML='<div class="empty">No files</div>';return}
+  let h='';
+  for(const f of d.files){
+    h+=`<div class="file-row">
+      <span class="fstat">${f.finished?'✓':f.running?'▼':''} ${f.percent||0}%</span>
+      <span class="fname" title="${esc(f.name)}">${esc(f.name)}</span>
+      <span class="fstat">${esc(f.bytes_loaded_formatted||'')} ${f.speed_formatted?'/ '+esc(f.speed_formatted):''}</span>
+    </div>`;
+  }
+  el.innerHTML=h;
+}
+
+/* ===== JD ACTIONS ===== */
+async function jdPrio(uuid){
+  await api('/api/downloads/prioritize',{method:'POST',body:JSON.stringify({package_uuid:uuid})});
+  pollDownloads();
+}
+async function jdMove(uuid,dir){
+  await api('/api/downloads/move',{method:'POST',body:JSON.stringify({package_uuid:uuid,direction:dir})});
+  pollDownloads();
+}
+async function gdlRetry(uuid){
+  await api('/api/downloads/retry',{method:'POST',body:JSON.stringify({package_uuid:uuid,source:'gallery-dl'})});
+  pollDownloads();
+}
+async function deletePkg(uuid,source){
+  if(!confirm('Delete this package?'))return;
+  await api('/api/downloads/delete',{method:'POST',body:JSON.stringify({package_uuid:uuid,source:source})});
+  pollDownloads();
+}
+
+/* ===== LINKGRABBER ===== */
+async function pollLG(){
+  const d=await api('/api/linkgrabber');
+  if(!d){$('lgList').innerHTML='<div class="empty">⚠ CONNECTION ERROR</div>';$('lgCount').textContent='0';return}
+  const items=d.items||[];
+  $('lgCount').textContent=items.length;
+  if(!items.length){$('lgList').innerHTML='<div class="empty">— NO LINKGRABBER ITEMS —</div>';return}
+  let html='';
+  for(const p of items){
+    const gdl=isGDL(p);
+    const tag=gdl?'<span class="pkg-tag gdl">GDL</span>':'<span class="pkg-tag jd">JD</span>';
+    const cat=esc(p.category||'');
+    html+=`<div class="lg-card">
+      <div class="lg-header">
+        ${tag}
+        <span class="pkg-status-badge ${cat==='error'?'error':'running'}" style="${cat==='ready'?'color:var(--cyan);border-color:var(--cyan-dim)':''}">${esc(p.status||cat)}</span>
+        <span style="flex:1;font-family:var(--font-body);font-size:.88rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.name)}">${esc(p.name)}</span>
+        <span style="font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim)">📎 ${esc(String(p.files_total||0))} files • ${esc(p.bytes_total_formatted||'—')}</span>
+      </div>
+      <div class="lg-save">📁 ${esc(p.save_to||'—')}</div>
+      <div class="lg-actions">
+        <button class="action-btn${gdl?' gdl-action':''}" onclick="downloadLGItem('${esc(p.uuid)}',false)">▶ DOWNLOAD</button>
+        <label class="cyber-check" style="margin-left:8px">
+          <input type="checkbox" id="vid_${esc(p.uuid)}">
+          <span>VIDEOS</span>
+        </label>
+      </div>
+    </div>`;
+  }
+  $('lgList').innerHTML=html;
+}
+
+async function downloadLGItem(uuid,videosOnly){
+  const vidEl=$('vid_'+uuid);
+  const vid=vidEl?vidEl.checked:false;
+  await api('/api/linkgrabber/download',{
+    method:'POST',
+    body:JSON.stringify({package_ids:[uuid],force_offline:$('lgForceOffline').checked,videos_only:vid})
+  });
+  setTimeout(pollLG,1500);
+}
+async function downloadAllLG(){
+  await api('/api/linkgrabber/download',{
+    method:'POST',
+    body:JSON.stringify({download_all:true,force_offline:$('lgForceOffline').checked,videos_only:false})
+  });
+  setTimeout(pollLG,1500);
+}
+
+/* ===== CONTROL ===== */
+async function controlAction(action){
+  await api('/api/control',{method:'POST',body:JSON.stringify({action})});
+  setTimeout(pollStatus,500);
+}
+
+/* ===== ADD LINKS ===== */
+async function submitLinks(){
+  const raw=$('addLinksInput').value.trim();
+  if(!raw){showFeedback('err','Please paste at least one URL');return}
+  const links=raw.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!links.length){showFeedback('err','No valid URLs found');return}
+  const dest=$('addDestInput').value.trim()||undefined;
+  const body={links,autostart:$('addAutostart').checked,videos_only:$('addVideosOnly').checked};
+  if(dest)body.destination_folder=dest;
+  $('addSubmitBtn').disabled=true;
+  const d=await api('/api/links',{method:'POST',body:JSON.stringify(body)});
+  $('addSubmitBtn').disabled=false;
+  if(d&&d.success!==false){
+    showFeedback('ok',esc(d.message||'Links submitted successfully!'));
+    $('addLinksInput').value='';
+    setTimeout(()=>{pollDownloads();pollLG()},1500);
+  }else{
+    showFeedback('err',esc(d?.error||d?.detail||'Submission failed'));
+  }
+}
+function showFeedback(type,msg){
+  const el=$('addFeedback');
+  el.className='feedback '+type;
+  el.textContent=msg;
+  setTimeout(()=>{el.className='feedback';el.textContent=''},6000);
+}
+
+/* ===== FOLDERS ===== */
+async function loadFolders(){
+  const d=await api('/api/folders');
+  if(!d||!d.folders)return;
+  const dl=$('folderList');
+  dl.innerHTML='';
+  for(const f of d.folders){
+    const o=document.createElement('option');
+    o.value=f;dl.appendChild(o);
+  }
+}
+async function createFolderPrompt(){
+  const name=prompt('New folder name:');
+  if(!name)return;
+  const d=await api('/api/folders/create',{method:'POST',body:JSON.stringify({name:name.trim()})});
+  if(d&&d.success){
+    showFeedback('ok','Folder "'+esc(d.name)+'" created');
+    loadFolders();
+    $('addDestInput').value=d.name;
+  }else{
+    showFeedback('err','Failed to create folder');
+  }
+}
+
+/* ===== POLL LOOP ===== */
+function startPolling(){
+  async function tick(){
+    await Promise.all([pollStatus(),pollDownloads(),pollLG()]);
+  }
+  tick();
+  setInterval(tick,4000);
+  // Folders load once on start
+  loadFolders();
+}
+
+/* ===== INIT ===== */
+document.addEventListener('DOMContentLoaded',startPolling);
+</script>
+</body>
+</html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JDLite // BRUTALIST</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --yellow:#FFD600;--black:#000;--white:#FFF;--red:#FF0000;
+  --gray:#1a1a1a;--gray2:#333;--gray3:#555;
+  --border:4px solid var(--white);
+  --border-thick:6px solid var(--white);
+}
+html{font-size:16px}
+body{
+  background:var(--black);color:var(--white);
+  font-family:'Courier New',Courier,monospace;
+  line-height:1.4;overflow-x:hidden;
+  max-width:1200px;margin:0 auto;padding:12px;
+}
+h1,h2,h3{font-family:'Arial Black','Impact',sans-serif;text-transform:uppercase;letter-spacing:2px}
+a{color:var(--yellow);text-decoration:none}
+button{
+  font-family:'Arial Black','Impact',sans-serif;
+  text-transform:uppercase;font-weight:900;letter-spacing:1px;
+  border:3px solid var(--white);background:var(--black);color:var(--white);
+  padding:8px 16px;cursor:pointer;font-size:0.8rem;
+  transition:background .1s,color .1s;outline:none;
+}
+button:hover{background:var(--white);color:var(--black)}
+button:active{background:var(--yellow);color:var(--black);border-color:var(--yellow)}
+button:disabled{opacity:0.3;cursor:default}
+button.btn-yellow{background:var(--yellow);color:var(--black);border-color:var(--yellow)}
+button.btn-yellow:hover{background:var(--white);border-color:var(--white)}
+button.btn-red{background:var(--red);color:var(--black);border-color:var(--red)}
+button.btn-red:hover{background:#CC0000;color:var(--white)}
+input,textarea,select{
+  font-family:'Courier New',Courier,monospace;
+  background:var(--gray);color:var(--white);
+  border:3px solid var(--gray3);padding:8px 12px;
+  font-size:0.95rem;width:100%;outline:none;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--yellow)}
+textarea{resize:vertical;min-height:80px}
+
+/* HEADER */
+.header{
+  border:var(--border-thick);padding:16px;margin-bottom:20px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:16px;
+}
+.header h1{
+  font-size:2rem;color:var(--yellow);flex:1 1 auto;min-width:200px;
+  border-bottom:4px solid var(--yellow);padding-bottom:6px;
+}
+.status-bar{
+  display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:0.85rem;
+}
+.status-bar .stat{white-space:nowrap}
+.status-bar .label{color:var(--gray3);text-transform:uppercase;font-size:0.7rem}
+.status-bar .value{color:var(--white);font-weight:bold}
+.status-bar .value.connected{color:var(--yellow)}
+.status-bar .value.offline{color:var(--red)}
+.header-controls{display:flex;gap:8px;flex-wrap:wrap}
+
+/* SECTIONS */
+.section{border:var(--border);margin-bottom:20px}
+.section-header{
+  background:var(--gray);padding:12px 16px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px;
+  border-bottom:var(--border);
+}
+.section-header h2{font-size:1.2rem;flex:1 1 auto;min-width:150px}
+.section-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.section-body{padding:12px 16px}
+
+/* PACKAGE LIST */
+.pkg{
+  border:3px solid var(--gray3);margin-bottom:10px;
+  transition:border-color .15s;
+}
+.pkg.running{border-left:6px solid var(--yellow)}
+.pkg.error{border-left:6px solid var(--red)}
+.pkg.finished{border-left:6px solid var(--gray3)}
+.pkg.queued{border-left:6px solid var(--gray3)}
+.pkg-header{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  padding:10px 12px;cursor:pointer;user-select:none;
+}
+.pkg-header:hover{background:var(--gray)}
+.pkg-meta{flex:1 1 200px;min-width:0}
+.pkg-name{
+  font-weight:bold;font-size:0.9rem;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.pkg-stats{font-size:0.75rem;color:var(--gray3);margin-top:2px;display:flex;gap:12px;flex-wrap:wrap}
+.pkg-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pkg-progress{
+  width:100%;height:6px;background:var(--gray);margin-top:6px;
+  border:1px solid var(--gray3);
+}
+.pkg-progress-bar{height:100%;background:var(--yellow);transition:width .3s}
+.pkg-progress-bar.error-bar{background:var(--red)}
+
+/* BADGES */
+.badge{
+  display:inline-block;font-family:'Arial Black',Impact,sans-serif;
+  font-size:0.7rem;font-weight:900;text-transform:uppercase;
+  padding:2px 8px;border:3px solid;letter-spacing:1px;
+  line-height:1.2;flex-shrink:0;
+}
+.badge-gdl{background:var(--yellow);color:var(--black);border-color:var(--yellow)}
+.badge-jd{background:var(--black);color:var(--white);border-color:var(--white)}
+.badge-prio{background:var(--red);color:var(--white);border-color:var(--red);font-size:0.6rem}
+
+/* FILE LIST */
+.file-list{
+  border-top:2px solid var(--gray3);margin-top:8px;
+  padding-top:8px;display:none;
+}
+.file-list.open{display:block}
+.file-item{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  padding:4px 0;border-bottom:1px solid var(--gray);
+  font-size:0.78rem;
+}
+.file-item .fname{flex:1 1 150px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-item .fmeta{display:flex;gap:10px;flex-wrap:wrap;color:var(--gray3)}
+
+/* TOGGLE */
+.toggle-icon{
+  display:inline-block;width:14px;text-align:center;
+  color:var(--gray3);font-size:1.1rem;flex-shrink:0;
+}
+.toggle-icon.open{transform:rotate(90deg)}
+
+/* CHECKBOX ROW */
+.check-row{display:flex;align-items:center;gap:8px;font-size:0.8rem}
+.check-row input[type=checkbox]{width:auto;accent-color:var(--yellow)}
+
+/* FOLDER INPUT */
+.folder-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1}
+.folder-row input{flex:1;min-width:120px}
+
+/* ADD FORM */
+.add-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.add-row .add-textarea{flex:1 1 300px;min-width:200px}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:20px;right:20px;z-index:9999;
+  padding:12px 20px;font-family:'Arial Black',Impact,sans-serif;
+  text-transform:uppercase;font-size:0.8rem;border:3px solid;
+  max-width:400px;word-break:break-word;
+}
+.toast.ok{background:var(--yellow);color:var(--black);border-color:var(--yellow)}
+.toast.err{background:var(--red);color:var(--white);border-color:var(--red)}
+
+/* EMPTY */
+.empty-msg{color:var(--gray3);font-style:italic;padding:16px 0;font-size:0.9rem}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .header h1{font-size:1.4rem}
+  body{padding:6px}
+  button{padding:6px 10px;font-size:0.7rem}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>JDownloader // Gallery-DL</h1>
+  <div class="status-bar">
+    <div class="stat"><span class="label">Status</span><br><span class="value" id="s-state">--</span></div>
+    <div class="stat"><span class="label">Speed</span><br><span class="value" id="s-speed">--</span></div>
+    <div class="stat"><span class="label">Disk Free</span><br><span class="value" id="s-disk">--</span></div>
+  </div>
+  <div class="header-controls">
+    <button onclick="control('pause')">⏸ Pause</button>
+    <button class="btn-yellow" onclick="control('resume')">▶ Resume</button>
+  </div>
+</div>
+
+<!-- DOWNLOADS -->
+<div class="section" id="dl-section">
+  <div class="section-header">
+    <h2>Downloads</h2>
+    <div class="section-controls">
+      <select id="dl-mode" onchange="fetchDownloads()">
+        <option value="active">Active</option>
+        <option value="all">All (24h)</option>
+      </select>
+      <button onclick="fetchDownloads()" title="Refresh">⟳</button>
+    </div>
+  </div>
+  <div class="section-body" id="dl-list">
+    <div class="empty-msg">Loading...</div>
+  </div>
+</div>
+
+<!-- LINKGRABBER -->
+<div class="section" id="lg-section">
+  <div class="section-header">
+    <h2>Linkgrabber</h2>
+    <div class="section-controls">
+      <div class="check-row">
+        <input type="checkbox" id="lg-videos">
+        <label for="lg-videos">Videos Only</label>
+      </div>
+      <div class="check-row">
+        <input type="checkbox" id="lg-force">
+        <label for="lg-force">Force Offline</label>
+      </div>
+      <button class="btn-yellow" onclick="downloadAllLG()">⬇ Download All</button>
+    </div>
+  </div>
+  <div class="section-body" id="lg-list">
+    <div class="empty-msg">Loading...</div>
+  </div>
+</div>
+
+<!-- ADD LINKS -->
+<div class="section">
+  <div class="section-header">
+    <h2>Add Links</h2>
+  </div>
+  <div class="section-body">
+    <textarea id="add-links" placeholder="One link per line..."></textarea>
+    <div class="add-row" style="margin-top:10px">
+      <div class="folder-row">
+        <input id="add-folder" list="folder-list" placeholder="Destination folder (optional)">
+        <datalist id="folder-list"></datalist>
+        <button onclick="createNewFolder()" title="Create new folder">+ New</button>
+      </div>
+      <div class="check-row">
+        <input type="checkbox" id="add-autostart" checked>
+        <label for="add-autostart">Auto-Start</label>
+      </div>
+      <div class="check-row">
+        <input type="checkbox" id="add-videos">
+        <label for="add-videos">Videos Only</label>
+      </div>
+      <button class="btn-yellow" onclick="addLinks()">ADD</button>
+    </div>
+    <div id="add-feedback" style="margin-top:8px;font-size:0.8rem;color:var(--yellow)"></div>
+  </div>
+</div>
+
+<script>
+/* ===== UTILITIES ===== */
+function E(s){return document.createElement(s)}
+function Q(s){return document.querySelector(s)}
+function QA(s){return document.querySelectorAll(s)}
+let lastFetch = {downloads:0, linkgrabber:0, status:0};
+let pollTimers = {};
+
+function esc(str){
+  if(str==null) return '';
+  const d=E('div');d.appendChild(document.createTextNode(String(str)));return d.innerHTML;
+}
+
+function toast(msg, ok){
+  const t=E('div');t.className='toast '+(ok?'ok':'err');t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),4000);
+}
+
+async function api(method, url, body){
+  try{
+    const opts={method,headers:{'Content-Type':'application/json'}};
+    if(body) opts.body=JSON.stringify(body);
+    const r=await fetch(url,opts);
+    const j=await r.json();
+    return j;
+  }catch(e){toast('Network error: '+e.message,false);return null;}
+}
+
+/* ===== STATUS ===== */
+async function fetchStatus(){
+  const now=Date.now();if(now-lastFetch.status<2000)return;lastFetch.status=now;
+  const d=await api('GET','/api/status');if(!d)return;
+  const sEl=Q('#s-state');
+  sEl.textContent=d.state||'--';
+  sEl.className='value '+(d.connected?'connected':'offline');
+  Q('#s-speed').textContent=d.speed_formatted||'--';
+  if(d.disk){
+    Q('#s-disk').textContent=d.disk.free_formatted||'--';
+  }
+}
+
+function control(action){
+  api('POST','/api/control',{action}).then(r=>{
+    if(r&&r.success) toast(action.toUpperCase()+' OK',true);
+    else toast(r?.detail||'Error',false);
+    fetchStatus();
+  });
+}
+
+/* ===== DOWNLOADS ===== */
+async function fetchDownloads(){
+  const mode=Q('#dl-mode').value;
+  const d=await api('GET','/api/downloads?mode='+encodeURIComponent(mode)+'&hours=24');
+  if(!d)return renderDownloads([]);
+  renderDownloads(d.items||[]);
+}
+
+function renderDownloads(items){
+  const c=Q('#dl-list');c.innerHTML='';
+  if(!items.length){c.innerHTML='<div class="empty-msg">No downloads.</div>';return;}
+  items.forEach(pkg=>{
+    const isGdl=pkg.uuid.startsWith('gdl_')||pkg.source==='gallery-dl';
+    const badge=isGdl?'<span class="badge badge-gdl">GDL</span>':'<span class="badge badge-jd">JD</span>';
+    const prioBadge=pkg.is_prioritized?'<span class="badge badge-prio">'+esc(pkg.priority)+'</span>':'';
+    const cls=pkg.category||'finished';
+    const pct=Math.min(100,parseFloat(pkg.percent)||0);
+
+    const wrap=E('div');wrap.className='pkg '+cls;
+    wrap.innerHTML=`
+      <div class="pkg-header" onclick="toggleFiles(this)">
+        <span class="toggle-icon">▶</span>
+        ${badge} ${prioBadge}
+        <div class="pkg-meta">
+          <div class="pkg-name" title="${esc(pkg.name)}">${esc(pkg.name)}</div>
+          <div class="pkg-stats">
+            <span>${esc(pkg.status)}</span>
+            <span>${esc(pkg.bytes_loaded_formatted)} / ${esc(pkg.bytes_total_formatted)}</span>
+            <span>${esc(pkg.speed_formatted)}</span>
+            <span>ETA: ${esc(pkg.eta_formatted)}</span>
+            <span>${esc(pkg.files_done)}/${esc(pkg.files_total)} files</span>
+          </div>
+        </div>
+        <div class="pkg-actions">
+          ${isGdl?`
+            <button onclick="event.stopPropagation();retryGdl('${esc(pkg.uuid)}')">⟳ Retry</button>
+          `:`
+            <button onclick="event.stopPropagation();prioPkg('${esc(pkg.uuid)}')">★ Prio</button>
+            <button onclick="event.stopPropagation();movePkg('${esc(pkg.uuid)}','up')">▲</button>
+            <button onclick="event.stopPropagation();movePkg('${esc(pkg.uuid)}','down')">▼</button>
+          `}
+          <button class="btn-red" onclick="event.stopPropagation();deletePkg('${esc(pkg.uuid)}','${esc(pkg.source)}')">✕</button>
+        </div>
+        <div class="pkg-progress">
+          <div class="pkg-progress-bar ${cls==='error'?'error-bar':''}" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="file-list" data-uuid="${esc(pkg.uuid)}" data-source="${esc(pkg.source)}"></div>
+    `;
+    c.appendChild(wrap);
+  });
+}
+
+function toggleFiles(header){
+  const fl=header.nextElementSibling;if(!fl)return;
+  const icon=header.querySelector('.toggle-icon');
+  if(fl.classList.contains('open')){
+    fl.classList.remove('open');if(icon)icon.classList.remove('open');return;
+  }
+  fl.classList.add('open');if(icon)icon.classList.add('open');
+  loadFiles(fl,fl.dataset.uuid,fl.dataset.source);
+}
+
+async function loadFiles(el,uuid,source){
+  el.innerHTML='<div style="padding:8px;color:var(--gray3)">Loading files...</div>';
+  const d=await api('GET','/api/downloads/files?package_uuid='+encodeURIComponent(uuid)+'&source='+encodeURIComponent(source));
+  if(!d||!d.files||!d.files.length){el.innerHTML='<div style="padding:8px;color:var(--gray3)">No files.</div>';return;}
+  el.innerHTML='';
+  d.files.forEach(f=>{
+    const row=E('div');row.className='file-item';
+    const fin=f.finished?'✓':'○';
+    row.innerHTML=`
+      <span>${fin}</span>
+      <span class="fname" title="${esc(f.name)}">${esc(f.name)}</span>
+      <span class="fmeta">
+        <span>${esc(f.bytes_loaded_formatted)}/${esc(f.bytes_total_formatted)}</span>
+        ${f.speed_formatted?'<span>'+esc(f.speed_formatted)+'</span>':''}
+        <span>${esc(f.status)}</span>
+      </span>
+    `;
+    el.appendChild(row);
+  });
+}
+
+/* ===== DOWNLOAD ACTIONS ===== */
+function prioPkg(uuid){
+  api('POST','/api/downloads/prioritize',{package_uuid:uuid}).then(r=>{
+    toast(r?.message||'Prio set',!!r?.success);fetchDownloads();
+  });
+}
+function movePkg(uuid,dir){
+  api('POST','/api/downloads/move',{package_uuid:uuid,direction:dir}).then(r=>{
+    toast(r?.message||'Moved',!!r?.success);fetchDownloads();
+  });
+}
+function deletePkg(uuid,source){
+  if(!confirm('Delete package?'))return;
+  api('POST','/api/downloads/delete',{package_uuid:uuid,source:source}).then(r=>{
+    toast(r?.message||'Deleted',!!r?.success);fetchDownloads();
+  });
+}
+function retryGdl(uuid){
+  api('POST','/api/downloads/retry',{package_uuid:uuid,source:'gallery-dl'}).then(r=>{
+    toast(r?.message||'Retry',!!r?.success);fetchDownloads();
+  });
+}
+
+/* ===== LINKGRABBER ===== */
+async function fetchLinkgrabber(){
+  const d=await api('GET','/api/linkgrabber');
+  if(!d)return renderLG([]);
+  renderLG(d.items||[]);
+}
+
+function renderLG(items){
+  const c=Q('#lg-list');c.innerHTML='';
+  if(!items.length){c.innerHTML='<div class="empty-msg">No packages in linkgrabber.</div>';return;}
+  items.forEach(pkg=>{
+    const isGdl=pkg.uuid.startsWith('gdl_')||pkg.source==='gallery-dl';
+    const badge=isGdl?'<span class="badge badge-gdl">GDL</span>':'<span class="badge badge-jd">JD</span>';
+    const cls=pkg.is_error?'error':(pkg.crawling?'running':'');
+    const wrap=E('div');wrap.className='pkg '+cls;
+    wrap.innerHTML=`
+      <div class="pkg-header">
+        ${badge}
+        <div class="pkg-meta">
+          <div class="pkg-name" title="${esc(pkg.name)}">${esc(pkg.name)}</div>
+          <div class="pkg-stats">
+            <span>${esc(pkg.status)}</span>
+            <span>${esc(pkg.bytes_total_formatted)}</span>
+            <span>${esc(pkg.files_total)} files</span>
+            <span>Dest: ${esc(pkg.save_to)}</span>
+          </div>
+        </div>
+        <div class="pkg-actions">
+          <button class="btn-yellow" onclick="downloadLG('${esc(pkg.uuid)}')">⬇ Start</button>
+        </div>
+      </div>
+    `;
+    c.appendChild(wrap);
+  });
+}
+
+function downloadLG(uuid){
+  const vids=Q('#lg-videos').checked;
+  const force=Q('#lg-force').checked;
+  api('POST','/api/linkgrabber/download',{
+    package_ids:[uuid],videos_only:vids,force_offline:force
+  }).then(r=>{
+    toast(r?.message||'Started',!!r?.success);
+    fetchLinkgrabber();fetchDownloads();
+  });
+}
+
+function downloadAllLG(){
+  const vids=Q('#lg-videos').checked;
+  const force=Q('#lg-force').checked;
+  api('POST','/api/linkgrabber/download',{
+    download_all:true,videos_only:vids,force_offline:force
+  }).then(r=>{
+    toast(r?.message||'Started all',!!r?.success);
+    fetchLinkgrabber();fetchDownloads();
+  });
+}
+
+/* ===== ADD LINKS ===== */
+async function loadFolders(){
+  const d=await api('GET','/api/folders');
+  if(!d||!d.folders)return;
+  const dl=Q('#folder-list');dl.innerHTML='';
+  d.folders.forEach(f=>{
+    const o=E('option');o.value=f;dl.appendChild(o);
+  });
+}
+
+function createNewFolder(){
+  const name=prompt('New folder name:');
+  if(!name)return;
+  api('POST','/api/folders/create',{name:name.trim()}).then(r=>{
+    if(r&&r.success){toast('Folder created: '+r.name,true);Q('#add-folder').value=r.name;loadFolders();}
+    else toast(r?.detail||'Error',false);
+  });
+}
+
+async function addLinks(){
+  const raw=Q('#add-links').value.trim();
+  if(!raw){toast('No links entered.',false);return;}
+  const links=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!links.length)return;
+  const autostart=Q('#add-autostart').checked;
+  const vids=Q('#add-videos').checked;
+  const folder=Q('#add-folder').value.trim();
+  const body={links,autostart,videos_only:vids};
+  if(folder) body.destination_folder=folder;
+  const fb=Q('#add-feedback');fb.textContent='Sending...';
+  const r=await api('POST','/api/links',body);
+  if(r&&r.success){fb.textContent='✓ '+esc(r.message||'Added');Q('#add-links').value='';}
+  else{fb.textContent='✗ '+esc(r?.detail||r?.message||'Error');fb.style.color='var(--red)';}
+  fetchDownloads();fetchLinkgrabber();
+}
+
+/* ===== POLLING ===== */
+function startPolling(){
+  function pollStatus(){fetchStatus();pollTimers.status=setTimeout(pollStatus,4000);}
+  function pollDL(){fetchDownloads();pollTimers.dl=setTimeout(pollDL,3500);}
+  function pollLG(){fetchLinkgrabber();pollTimers.lg=setTimeout(pollLG,4000);}
+  pollStatus();pollDL();pollLG();
+}
+
+/* ===== INIT ===== */
+fetchStatus();
+fetchDownloads();
+fetchLinkgrabber();
+loadFolders();
+startPolling();
+</script>
+</body>
+</html>
