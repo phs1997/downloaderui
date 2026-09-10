@@ -289,8 +289,11 @@ header{
 @keyframes openUp{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .errstrip{
   display:flex;align-items:center;gap:9px;padding:9px 15px;border-top:1px solid rgba(244,63,94,.25);
-  background:rgba(244,63,94,.08);color:var(--red);font-size:12px;flex-wrap:wrap;
+  background:rgba(244,63,94,.08);color:var(--red);font-size:12px;flex-wrap:nowrap;min-width:0;
 }
+.errstrip .estxt{flex:1;min-width:0;word-break:break-word;overflow-wrap:anywhere;}
+/* Lange Fehlertexte: max. 2 Zeilen, Rest zeilenalweis abgeschnitten */
+.estxt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;}
 .files{border-top:1px solid var(--stroke-soft);background:rgba(10,6,22,.4);padding:10px 14px}
 .files-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
 .fileitem{padding:8px 2px;border-bottom:1px solid var(--stroke-soft);min-width:0}
@@ -706,7 +709,7 @@ function renderDownloadPackage(p){
       +'</div>';
   }
 
-  const errStrip=p.is_error?'<div class="errstrip">'+icon('triangle-exclamation')+'<span style="flex:1;min-width:0">'+esc(p.status)+'</span>'
+  const errStrip=p.is_error?'<div class="errstrip">'+icon('triangle-exclamation')+'<span class="estxt">'+esc(p.status)+'</span>'
       +(gdl?'<button class="tbtn danger" onclick="retryDownload(\''+id+'\',event)">'+icon('rotate')+'Wiederholen</button>'
            :'<button class="tbtn danger" onclick="retryDownloadJD(\''+id+'\',event)">'+icon('rotate')+'Wiederholen</button>')
       +'</div>':'';
@@ -748,7 +751,7 @@ function renderLinkgrabberPackage(p){
   return '<div class="lgp" data-gdl="'+(gdl?1:0)+'">'
     +'<div class="lgp-top">'
     +'<div class="lgp-title"><span class="lgp-name" title="'+esc(p.name)+'">'+esc(p.name)+'</span>'+toolBadge(p)+crawl+'<span class="chip files">'+total+' Datei'+(total>1?'en':'')+'</span></div>'
-    +'<div class="lgp-sub">'+(sizeTxt?'<span>'+sizeTxt+'</span>':'')+'<span'+((p.is_error)?' style="color:var(--red)"':'')+'>'+esc(p.status)+'</span></div>'
+    +'<div class="lgp-sub">'+(sizeTxt?'<span>'+sizeTxt+'</span>':'')+'<span class="estxt"'+((p.is_error)?' style="color:var(--red)"':'')+'>'+esc(p.status)+'</span></div>'
     +'</div>'
     +'<div class="lgp-path">'+icon('folder')+'<span class="p" title="'+esc(savePath)+'">'+esc(savePath)+'</span>'
     +'<button class="tbtn" onclick="openDirModal(\''+id+'\',\''+esc(p.name)+'\',\''+esc(savePath)+'\')">'+icon('gear')+'Ändern</button></div>'
