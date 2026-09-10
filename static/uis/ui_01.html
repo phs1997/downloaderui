@@ -180,6 +180,31 @@ header{
 .tbtn.primary:hover{filter:brightness(1.08)}
 .tbtn.danger:hover{color:var(--red);border-color:var(--rose)}
 
+/* ---------- Submenu navigation ---------- */
+.subnav{
+  display:flex;gap:8px;margin:14px 0;padding:6px;border-radius:16px;
+  background:rgba(22,14,46,.55);border:1px solid var(--stroke-soft);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  position:sticky;top:calc(var(--safe-top) + 8px);z-index:40;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;max-width:100%;
+}
+.subnav::-webkit-scrollbar{display:none}
+.subnav-btn{
+  display:inline-flex;align-items:center;gap:7px;flex:1;min-width:max-content;
+  justify-content:center;height:40px;padding:0 14px;border-radius:12px;
+  font-size:12.5px;font-weight:700;color:var(--text-dim);white-space:nowrap;
+  transition:all .2s;
+}
+.subnav-btn i{font-size:12px;color:var(--violet)}
+.subnav-btn b{font-family:var(--mono);font-size:11px;background:var(--glass);border:1px solid var(--stroke-soft);padding:1px 6px;border-radius:8px;color:var(--fuchsia)}
+.subnav-btn:hover{color:#fff;background:var(--glass)}
+.subnav-btn.on{background:var(--grad);color:#fff;box-shadow:0 5px 16px -5px rgba(139,92,246,.7)}
+.subnav-btn.on i,.subnav-btn.on b{color:#fff}
+.subnav-btn.on b{background:rgba(255,255,255,.18);border-color:transparent}
+
+/* ---------- Section: nur aktive sichtbar ---------- */
+.sec[data-active="0"]{display:none}
+
 /* Queue band */
 .qband{
   display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;
@@ -322,9 +347,16 @@ textarea.input{resize:vertical;min-height:130px;line-height:1.6}
 .feedback.show{display:block}
 .feedback.ok{color:var(--mint);background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.4)}
 .feedback.err{color:var(--red);background:rgba(244,63,94,.09);border-color:rgba(244,63,94,.4)}
-.folder-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
-.folder-chip{height:30px;padding:0 11px;border-radius:9px;background:rgba(139,92,246,.1);border:1px solid var(--stroke-soft);font-family:var(--mono);font-size:11px;color:var(--text-dim);display:inline-flex;align-items:center;transition:all .15s}
+/* Ordner-Auswahl: kompakte horizontal scrollbare Leiste statt endloser Liste */
+.folder-chips{display:flex;flex-wrap:nowrap;flex-direction:row;gap:6px;margin-top:2px;
+  overflow-x:auto;overflow-y:hidden;max-width:100%;
+  padding:2px 1px 6px;scrollbar-width:thin;-webkit-overflow-scrolling:touch;
+  touch-action:pan-x;}
+.folder-chip{height:30px;padding:0 11px;border-radius:9px;background:rgba(139,92,246,.1);border:1px solid var(--stroke-soft);font-family:var(--mono);font-size:11px;color:var(--text-dim);display:inline-flex;align-items:center;flex:none;white-space:nowrap;transition:all .15s}
 .folder-chip:hover{color:#fff;border-color:var(--violet);transform:translateY(-1px)}
+/* Hardening: kein horizontales Überlaufen aus Containern */
+.sec,#app .toolbox,.addcard,.modal{max-width:100%;overflow-x:hidden}
+#downloadsList,#linkgrabberList{max-width:100%;overflow-x:hidden}
 
 /* ---------- Modal ---------- */
 .overlay{position:fixed;inset:0;z-index:60;background:rgba(8,4,20,.75);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:18px}
@@ -415,6 +447,13 @@ textarea.input{resize:vertical;min-height:130px;line-height:1.6}
       <div class="sub" id="statQueueSub">genügend Platz</div>
     </div>
   </div>
+
+  <!-- ============ SUBMENÜ-NAVIGATION ============ -->
+  <nav class="subnav">
+    <button class="subnav-btn on" data-sec="secDownloads" onclick="showSection('secDownloads',this)"><i class="fa-solid fa-circle-down"></i>Downloads <b id="subDlCount">0</b></button>
+    <button class="subnav-btn" data-sec="secLinkgrabber" onclick="showSection('secLinkgrabber',this)"><i class="fa-solid fa-list-check"></i>Linkgrabber <b id="subLgCount">0</b></button>
+    <button class="subnav-btn" data-sec="secAdd" onclick="showSection('secAdd',this)"><i class="fa-solid fa-plus"></i>Hinzufügen</button>
+  </nav>
 
   <!-- ============ SECTION: DOWNLOADS ============ -->
   <section class="sec" id="secDownloads">
@@ -789,6 +828,7 @@ async function pollDownloads(){
     const items=d.items||[];
     $('dlCount').textContent=items.length;
     $('statActive').textContent=items.length;
+    syncSubNavCounts(items.length,$('lgCount').textContent||0);
     const running=items.filter(x=>x.category==='running').length;
     $('statActiveSub').textContent=running+' laufen · '+(items.length-running)+' sonst';
 
@@ -809,16 +849,17 @@ async function pollDownloads(){
     }
 
     const list=$('downloadsList');
-    if(!items.length){list.innerHTML=emptyDownloads();}
-    else{
+    const html=items.length?items.map(renderDownloadPackage).join(''):emptyDownloads();
+    // Nur neu rendern, wenn sich der Inhalt wirklich ändert (kein Flickern / Scroll-Reset)
+    if(list.innerHTML!==html){
       const cur=list.scrollTop;
-      list.innerHTML=items.map(renderDownloadPackage).join('');
+      list.innerHTML=html;
       list.scrollTop=cur;
-      if(State.openDlFiles){
-        const it=items.find(x=>String(x.uuid)===String(State.openDlFiles));
-        const src=(it&&isGdl(it))?'gallery-dl':'downloads';
-        fetchPackageFiles(State.openDlFiles,src);
-      }
+    }
+    if(State.openDlFiles){
+      const it=items.find(x=>String(x.uuid)===String(State.openDlFiles));
+      const src=(it&&isGdl(it))?'gallery-dl':'downloads';
+      fetchPackageFiles(State.openDlFiles,src);
     }
   }catch(e){}
   finally{State.busy.dl=false;setTimeout(pollDownloads,3500);}
@@ -833,18 +874,20 @@ async function pollLinkgrabber(){
     const d=await res.json();
     const items=d.items||[];
     $('lgCount').textContent=items.length;
+    syncSubNavCounts($('dlCount').textContent||0,items.length);
     // Merken: crawling-Flag nur bei gdl übertragen
     const tm={};
     items.forEach(x=>{tm[x.uuid]={crawling:!!x.crawling};});
     State.lastLg=tm;
     const list=$('linkgrabberList');
-    if(!items.length){list.innerHTML=emptyBox('Grabber ist leer');}
-    else{
+    const html=items.length?items.map(renderLinkgrabberPackage).join(''):emptyBox('Grabber ist leer');
+    // Nur neu rendern, wenn Inhalt sich wirklich ändert
+    if(list.innerHTML!==html){
       const cur=list.scrollTop;
-      list.innerHTML=items.map(renderLinkgrabberPackage).join('');
+      list.innerHTML=html;
       list.scrollTop=cur;
-      if(State.openLgFiles)setTimeout(()=>fetchPackageFiles(State.openLgFiles,'linkgrabber'),30);
     }
+    if(State.openLgFiles)setTimeout(()=>fetchPackageFiles(State.openLgFiles,'linkgrabber'),30);
   }catch(e){}
   finally{State.busy.lg=false;setTimeout(pollLinkgrabber,3500);}
 }
@@ -863,6 +906,20 @@ function toggle24h(){
   const b=$('btn24h');
   b.classList.toggle('on',State.only24h);
   pollDownloads();
+}
+/* ---------- Submenu navigation ---------- */
+function showSection(id,btn){
+  if(btn&&!btn.classList.contains('on')){
+    document.querySelectorAll('.subnav-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+  }
+  document.querySelectorAll('.sec').forEach(s=>{
+    s.dataset.active = (s.id===id)?'1':'0';
+  });
+}
+function syncSubNavCounts(dlCount,lgCount){
+  const d=$('subDlCount');if(d)d.textContent=dlCount;
+  const l=$('subLgCount');if(l)l.textContent=lgCount;
 }
 function togglePackageActions(id,e){
   if(e)e.stopPropagation();
@@ -1063,6 +1120,8 @@ loadFolders();
 pollStatus();
 pollDownloads();
 pollLinkgrabber();
+// Init: nur Downloads-Sektion sichtbar machen
+showSection('secDownloads');
 </script>
 </body>
 </html>
