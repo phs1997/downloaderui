@@ -900,7 +900,14 @@ async function pollDownloads(){
       const curSig=row.getAttribute('data-sig');
       const open=State.expandedPkg===p.uuid;
       const filesOpen=State.openDlFiles===p.uuid;
-      if(sig!==curSig || (open&&!row.classList.contains('is-open')) || (filesOpen&&!row.querySelector('.files'))){
+      // Neu rendern, wenn sich die Struktur ändert ODER der Expand/Dateilisten-Zustand
+      // nicht zum aktuellen Paket passt (z.B. Dateien-Button gerade geöffnet wurde).
+      // WICHTIG: Prüfe auf das EINDEUTIGE Dateilisten-Block (fc_<id>), nicht das generische
+      // `.files` (das kann auch andere UI-Elemente mit dieser Klasse treffen – fake positif).
+      const hasFilesBlock = row.querySelector('#fc_'+p.uuid)?1:0;
+      const wantFiles = (filesOpen && p.files_total)?1:0;
+      if(sig!==curSig || (open&&!row.classList.contains('is-open')) ||
+         (filesOpen&&!hasFilesBlock) || (wantFiles!==hasFilesBlock&&wantFiles)){
         // strukturelle Änderung => neu rendern dieser Zeile
         const curScrollHasFiles=row.querySelector('.files');
         const nb=renderPkg(p);
@@ -1004,6 +1011,16 @@ function togglePackageFiles(id,source,e){
     if(State.openLgFiles)setTimeout(()=>fetchPackageFiles(State.openLgFiles,'linkgrabber'),40);
   }
 }
+function renderFilesInto(el, files){
+  // In-place: nur neu bauen, wenn sich Inhalt wirklich ändert (kein Springen beim Aufklappen)
+  let html=(files&&files.length)?files.map(renderFileItem).join(''):'<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien.</div>';
+  if(el.getAttribute('data-files-sig')!==html){
+    const top=el.scrollTop;
+    el.innerHTML=html;
+    el.setAttribute('data-files-sig',html);
+    el.scrollTop=top;
+  }
+}
 async function fetchPackageFiles(id,source){
   try{
     const res=await fetch('/api/downloads/files?package_uuid='+encodeURIComponent(id)+'&source='+encodeURIComponent(source));
@@ -1013,16 +1030,13 @@ async function fetchPackageFiles(id,source){
     const open=(source==='downloads'||source==='gallery-dl')?(State.openDlFiles===id):(State.openLgFiles===id);
     if(open){
       const el=$('fc_'+id);
-      if(el){
-        let html=(d.files||[]).length?d.files.map(renderFileItem).join(''):'<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien.</div>';
-        // In-place: nur neu bauen, wenn sich Inhalt wirklich ändert (kein Springen beim Aufklappen)
-        if(el.getAttribute('data-files-sig')!==html){
-          const top=el.scrollTop;
-          el.innerHTML=html;
-          el.setAttribute('data-files-sig',html);
-          el.scrollTop=top;
-        }
-      }
+      if(el){ renderFilesInto(el,d.files||[]); }
+      else if(source==='linkgrabber'){ pollLinkgrabber(); }  // Race: Container war noch nicht gerendert -> Re-Render anstoßen
+      else { pollDownloads(); }
+      // Garantierter Re-Render im Anschluss: ein laufender pollDownloads (busy.dl) hat den
+      // offenen Zustand evtl. verpasst; erzwinge einen weiteren Lauf NACH diesem Cycle,
+      // damit die Dateilisten-Zeile auf jeden Fall gerendert wird.
+      setTimeout(()=>{ if(State.openDlFiles===id&&!$('fc_'+id)){ State.busy.dl=false; pollDownloads(); } },150);
     }
   }catch(e){}
 }
