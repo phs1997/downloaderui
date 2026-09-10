@@ -3,521 +3,551 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0c0f14">
-<meta name="apple-mobile-web-app-title" content="JD WebUI">
-<title>JDownloader WebUI · Console</title>
+<meta name="theme-color" content="#150b2e">
+<meta name="apple-mobile-web-app-title" content="JD Flux Dashboard">
+<title>JD Flux · Dashboard (Test-UI)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   Ansatz B — "Ops Console" Design-System
-   Handgeschriebenes, schlankes CSS mit CSS-Variablen.
-   Mobile-First (iPhone), keine fetten Karten, kompakte Rows.
+   JD Flux — DASHBOARD TEST-UI
+   Eigenständiges Design: Glassmorphism + Indigo/Violett/Fuchsia
+   lebendiger Farb-Look, fließende Animationen. KEIN graues UI.
    ============================================================ */
 :root{
-  --bg:#0c0f14;
-  --bg-2:#10141b;
-  --surface:#141922;
-  --surface-2:#1a202b;
-  --line:#232b37;
-  --line-soft:#1c232d;
-  --text:#e6e9ee;
-  --text-dim:#8b93a1;
-  --text-faint:#5b6472;
-  --accent:#7ee081;          /* console-lime */ 
-  --accent-dim:#2d6330;
-  --blue:#5aa2ff;
-  --amber:#f5b84d;
-  --red:#ff6b6b;
-  --cyan:#46c6c2;
-  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"SF Mono",monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Segoe UI",Roboto,sans-serif;
-  --radius:10px;
-  --r-sm:7px;
-  --tap:44px;                /* Tangrösse */
+  --bg0:#0a0616;
+  --bg1:#120a29;
+  --indigo:#6366f1;
+  --violet:#8b5cf6;
+  --fuchsia:#d946ef;
+  --pink:#f472b6;
+  --cyan:#22d3ee;
+  --teal:#2dd4bf;
+  --mint:#34d399;
+  --lime:#a3e635;
+  --gold:#fbbf24;
+  --emerald:#10b981;
+  --red:#fb7185;
+  --rose:#f43f5e;
+  --text:#f1edff;
+  --text-dim:#b9aee0;
+  --text-faint:#7a6fa5;
+  --glass:rgba(255,255,255,.06);
+  --glass-2:rgba(255,255,255,.10);
+  --stroke:rgba(139,92,246,.32);
+  --stroke-soft:rgba(139,92,246,.16);
+  --grad:linear-gradient(135deg,#6366f1 0%,#8b5cf6 45%,#d946ef 100%);
+  --grad-soft:linear-gradient(135deg,rgba(99,102,241,.22),rgba(217,70,239,.22));
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --display:'Sora',var(--sans);
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --radius:18px;
+  --r-sm:12px;
+  --shadow:0 20px 50px -20px rgba(0,0,0,.6);
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
-  --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 8px 22px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
+html,body{min-height:100%}
 body{
-  background:var(--bg);
-  color:var(--text);
   font-family:var(--sans);
-  font-size:14px;
-  line-height:1.45;
+  font-size:14px;line-height:1.5;color:var(--text);
+  background:var(--bg0);
   overflow-x:hidden;
-  overscroll-behavior-y:contain;
-  -webkit-font-smoothing:antialiased;
-  padding-top:var(--safe-top);
-  padding-bottom:var(--safe-bottom);
+  background-image:
+    radial-gradient(1100px 600px at 12% -10%,rgba(139,92,246,.28),transparent 60%),
+    radial-gradient(900px 620px at 100% 0%,rgba(217,70,239,.20),transparent 55%),
+    radial-gradient(800px 600px at 50% 110%,rgba(34,211,238,.14),transparent 55%),
+    linear-gradient(180deg,var(--bg1),var(--bg0) 55%);
+  background-attachment:fixed;
 }
 button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,textarea{font-family:inherit;color:inherit;border:none;outline:none;background:none}
-input,textarea{font-size:16px} /* 16px verhindert iOS-Zoom beim Fokussieren */
+input,textarea{font-size:16px}
 ::placeholder{color:var(--text-faint)}
-.fix{min-width:0}
-.mono{font-family:var(--mono);font-size:12px}
-.small{font-size:12px}
-.ellip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wrap{min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+a{color:inherit}
+.mono{font-family:var(--mono)}
+.hidden{display:none!important}
+.fade-out{opacity:.35;pointer-events:none}
 
-/* SVG-Icons */
-svg.ico{flex:none;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-svg.ico.sm{width:13px;height:13px}
-svg.ico.lg{width:20px;height:20px}
+#app{max-width:1120px;margin:0 auto;padding:calc(var(--safe-top) + 14px) 14px calc(var(--safe-bottom) + 30px)}
+@media(min-width:768px){#app{padding-left:26px;padding-right:26px}}
 
-/* ---------------- App-Shell ---------------- */
-#app{max-width:640px;margin:0 auto;padding:0 12px 8px}
-@media(min-width:640px){#app{max-width:760px;padding:0 20px 12px}}
+/* ---------- Ambient floating blobs ---------- */
+.orb{position:fixed;border-radius:50%;filter:blur(70px);opacity:.28;z-index:-1;pointer-events:none;animation:drift 18s ease-in-out infinite}
+.orb.o1{width:340px;height:340px;background:#7c3aed;top:-90px;right:-60px}
+.orb.o2{width:300px;height:300px;background:#c026d3;bottom:-90px;left:-70px;animation-delay:-8s}
+.orb.o3{width:220px;height:220px;background:#0891b2;top:40%;left:55%;animation-delay:-13s;opacity:.16}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-24px) scale(1.08)}66%{transform:translate(-26px,18px) scale(.94)}}
 
-/* ================= HEADER (kompakt auf iPhone) ================= */
+/* ---------- Header ---------- */
 header{
-  position:sticky;top:0;z-index:30;
-  background:color-mix(in srgb,var(--bg) 82%,transparent);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line-soft);
-  margin:0 calc(var(--safe-top)* -1);
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 16px;border-radius:var(--radius);
+  background:rgba(22,14,46,.55);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--stroke-soft);
+  box-shadow:var(--shadow);
+  animation:rise .5s ease both;
 }
-header .inner{
-  max-width:760px;margin:0 auto;padding:8px 12px;
-  display:flex;align-items:center;gap:8px;min-width:0;
+.brand{display:flex;align-items:center;gap:13px;flex:1;min-width:0}
+.logo{
+  width:46px;height:46px;flex:none;border-radius:14px;
+  background:var(--grad);display:grid;place-items:center;
+  color:#fff;font-size:20px;box-shadow:0 8px 22px -6px rgba(139,92,246,.75);
+  position:relative;animation:glowPulse 3.2s ease-in-out infinite;
 }
-.brand{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
-.brand .logo{
-  width:30px;height:30px;flex:none;border-radius:7px;
-  background:linear-gradient(135deg,#1a3d20,#0e2213);
-  border:1px solid var(--accent-dim);
-  display:grid;place-items:center;color:var(--accent);
-}
-.brand .name{min-width:0}
-.brand h1{font-size:13px;font-weight:600;letter-spacing:.02em;line-height:1.1}
-.brand .status{
-  display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);
-  font-family:var(--mono);margin-top:1px;min-width:0;
-}
-.dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--text-faint)}
-.dot.on{background:var(--accent);box-shadow:0 0 0 0 rgba(126,224,129,.5);animation:pulse 2s infinite}
-.dot.off{background:var(--amber);animation:pulse 1.6s infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(245,184,77,.45)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
-.hdr-chips{display:flex;align-items:center;gap:6px;flex:none}
-.chip{
-  display:flex;align-items:center;gap:5px;height:30px;padding:0 9px;border-radius:8px;
-  background:var(--surface);border:1px solid var(--line);
-  font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;
-}
-.chip .lbl{color:var(--text-faint)}
-.chip.bar{color:var(--text-dim)}
-.pause-btn{
-  display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:8px;
-  background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:600;
-  color:var(--text);transition:background .15s;
-}
-.pause-btn.highlight{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
-.pause-btn:active{background:var(--line)}
+@keyframes glowPulse{0%,100%{box-shadow:0 8px 22px -6px rgba(139,92,246,.75)}50%{box-shadow:0 8px 34px -4px rgba(217,70,239,.95)}}
+.brand h1{font-family:var(--display);font-size:17px;font-weight:800;letter-spacing:.02em;line-height:1.1}
+.brand .tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--fuchsia);font-weight:700}
+.connRow{display:flex;align-items:center;gap:8px;margin-top:5px;font-family:var(--mono);font-size:11px;color:var(--text-dim);min-width:0}
+.pulse{width:9px;height:9px;border-radius:50%;flex:none;background:var(--text-faint)}
+.pulse.on{background:var(--mint);animation:pulseRing 1.8s infinite}
+.pulse.off{background:var(--gold);animation:pulseRing 1.3s infinite}
+@keyframes pulseRing{0%{box-shadow:0 0 0 0 rgba(52,211,153,.6)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
 
-/* ================= TABS ================= */
-nav.tabs{
-  display:flex;margin:10px 0 4px;border-bottom:1px solid var(--line-soft);
-  background:color-mix(in srgb,var(--bg) 70%,transparent);
-  position:sticky;top:calc(46px + var(--safe-top));z-index:20;
+.hdrControls{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.pill{
+  display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px;border-radius:12px;
+  background:var(--glass);border:1px solid var(--stroke-soft);
+  font-family:var(--mono);font-size:11.5px;color:var(--text-dim);white-space:nowrap;
 }
-.tab{
-  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
-  height:var(--tap);padding:0 6px;font-size:13px;font-weight:600;color:var(--text-dim);
-  border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;min-width:0;
+.pill .f{color:var(--mint);font-weight:600}
+.pill i{font-size:12px;color:var(--violet)}
+.ctrlBtn{
+  display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 15px;border-radius:12px;
+  font-size:12.5px;font-weight:700;color:#fff;background:var(--grad);
+  box-shadow:0 6px 18px -5px rgba(139,92,246,.7);
+  transition:transform .15s,box-shadow .2s,filter .2s;
 }
-.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.badge{
-  background:var(--surface-2);border:1px solid var(--line);color:var(--text-dim);
-  font-family:var(--mono);font-size:10px;line-height:1;padding:3px 6px;border-radius:20px;flex:none;
-}
-.tab.active .badge{color:var(--accent);border-color:var(--accent-dim)}
+.ctrlBtn:hover{transform:translateY(-1px);filter:brightness(1.08);box-shadow:0 10px 24px -6px rgba(217,70,239,.85)}
+.ctrlBtn:active{transform:translateY(0) scale(.98)}
+.ctrlBtn.resume{background:linear-gradient(135deg,#10b981,#34d399);box-shadow:0 6px 18px -5px rgba(16,185,129,.7)}
+.ctrlBtn i{font-size:12px}
 
-/* ================= PANELS & LISTEN ================= */
-.panel{display:none}
-.panel.on{display:block}
-.list{display:flex;flex-direction:column;gap:8px;padding-bottom:24px}
-
-/* Toolbar oben in jedem Panel */
-.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 4px;min-width:0}
-.toolbar .grow{flex:1;min-width:0}
-.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{
-  height:30px;padding:0 11px;font-size:12px;font-weight:600;color:var(--text-dim);
-  border-right:1px solid var(--line-soft);display:flex;align-items:center;gap:5px;
+/* ---------- Stat tiles ---------- */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0}
+@media(min-width:640px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{
+  position:relative;overflow:hidden;border-radius:var(--radius);
+  padding:15px 16px;background:var(--glass);
+  border:1px solid var(--stroke-soft);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  animation:rise .5s ease both;
 }
-.seg button:last-child{border-right:none}
-.seg button.on{background:var(--surface-2);color:var(--accent)}
-.btn{
-  display:inline-flex;align-items:center;gap:6px;justify-content:center;
-  height:38px;padding:0 12px;border-radius:var(--r-sm);font-size:12px;font-weight:600;
-  background:var(--surface);border:1px solid var(--line);color:var(--text-dim);
-  transition:background .12s,color .12s,border-color .12s;
-}
-.btn:active{background:var(--surface-2)}
-.btn.tint{color:var(--cyan)}
-.btn.ok{background:var(--accent-dim);border-color:var(--accent);color:#d8ffdb}
-.btn.danger{color:var(--red)}
-.btn.mini{height:32px;padding:0 9px;font-size:11px}
-.btn:disabled{opacity:.5}
-.btn svg.ico{width:15px;height:15px}
+.stat:nth-child(2){animation-delay:.06s}
+.stat:nth-child(3){animation-delay:.12s}
+.stat:nth-child(4){animation-delay:.18s}
+.stat::after{content:'';position:absolute;top:-55%;right:-40%;width:120px;height:120px;border-radius:50%;filter:blur(36px);opacity:.5}
+.stat.speed::after{background:rgba(34,211,238,.55)}
+.stat.active::after{background:rgba(139,92,246,.6)}
+.stat.disk::after{background:rgba(52,211,153,.55)}
+.stat.queue::after{background:rgba(251,191,36,.55)}
+.stat .ico{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;margin-bottom:10px;font-size:15px;color:#fff}
+.stat.speed .ico{background:linear-gradient(135deg,#06b6d4,#22d3ee)}
+.stat.active .ico{background:linear-gradient(135deg,#7c3aed,#a855f7)}
+.stat.disk .ico{background:linear-gradient(135deg,#059669,#34d399)}
+.stat.queue .ico{background:linear-gradient(135deg,#d97706,#fbbf24)}
+.stat .lbl{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint)}
+.stat .val{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.01em;margin-top:3px;min-height:28px}
+.stat .sub{font-size:11px;color:var(--text-faint);font-family:var(--mono);margin-top:2px}
+.stat .val.pulse-live{animation:tick 1s ease-in-out infinite}
+@keyframes tick{50%{text-shadow:0 0 16px rgba(34,211,238,.9)}}
 
-/* Queue-Zusammenfassung Streifen */
-.confirmband{
-  display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;
-  background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--r-sm);
-  padding:7px 10px;margin-bottom:2px;font-family:var(--mono);font-size:11px;color:var(--text-dim);
-}
-.confirmband b{color:var(--text);font-weight:600}
-.confirmband .q{color:var(--amber)}
-.confirmband .left.ok{color:var(--accent)}
-.confirmband .left.bad{color:var(--red)}
-
-/* Live-Hinweis */
-.live{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:.06em;text-transform:uppercase}
-.live .lt{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.4s infinite}
+/* ---------- Sections ---------- */
+.sec{margin:22px 0}
+.sec-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;animation:rise .4s ease both}
+.sec-head h2{font-family:var(--display);font-size:16px;font-weight:800;display:flex;align-items:center;gap:9px}
+.sec-head h2 i{color:var(--violet);font-size:15px}
+.sec-badge{font-family:var(--mono);font-size:10.5px;color:var(--fuchsia);background:rgba(217,70,239,.14);border:1px solid rgba(217,70,239,.3);padding:3px 9px;border-radius:20px;font-weight:600}
+.spacer{flex:1}
+.liveTag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint)}
+.liveDot{width:6px;height:6px;border-radius:50%;background:var(--mint);animation:blink 1.3s infinite}
 @keyframes blink{50%{opacity:.15}}
 
-/* ================= DOWNLOAD-PAKET (kompakte Row, KEINE fette Karte) ================= */
-.dl{
-  background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius);
-  border-left:3px solid var(--line);overflow:hidden;
-}
-.dl[data-cat="running"]{border-left-color:var(--accent)}
-.dl[data-cat="error"]{border-left-color:var(--red)}
-.dl[data-cat="crawling"]{border-left-color:var(--amber)}
-.dl[data-cat="queued"]{border-left-color:var(--blue)}
-.dl.is-open{border-color:var(--line)}
-.dl-head{
-  padding:8px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;
-}
-.dl-main{min-width:0;flex:1}
-.dl-title{display:flex;align-items:center;gap:6px;min-width:0}
-.dl-name{font-size:13px;font-weight:600;color:var(--text);min-width:0}
-/* ellipsis + wrap anbrechender Paketnamen */
-.ellip-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;line-height:1.3}
-.dl-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;min-width:0}
-.meta-chip{
-  display:inline-flex;align-items:center;gap:4px;height:19px;padding:0 6px;border-radius:5px;
-  font-family:var(--mono);font-size:10px;color:var(--text-dim);background:var(--bg-2);border:1px solid var(--line-soft);white-space:nowrap;
-}
-.meta-chip.st{color:var(--text-dim)}
-.meta-chip.dl-badge{color:var(--cyan);border-color:#144a48}
-.meta-chip.priHIGH{color:var(--amber);border-color:#4a3a17}
-.meta-chip.priHIGHEST{color:var(--red);border-color:#4a2020}
-.status-chip{
-  display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:5px;
-  font-size:11px;font-weight:600;white-space:nowrap;flex:none;
-}
-.status-chip.running{background:rgba(126,224,129,.12);color:var(--accent)}
-.status-chip.error{background:rgba(255,107,107,.13);color:var(--red)}
-.status-chip.crawling{background:rgba(245,184,77,.12);color:var(--amber)}
-.status-chip.finished{background:rgba(90,162,255,.14);color:var(--blue)}
-.status-chip.queued{background:var(--bg-2);color:var(--text-dim)}
-.dl-caret{color:var(--text-faint);flex:none;transition:transform .18s;width:16px;height:16px}
-.dl.is-open .dl-caret{transform:rotate(180deg)}
+/* toolbox */
+.toolbox{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.seg{display:flex;background:var(--glass);border:1px solid var(--stroke-soft);border-radius:12px;overflow:hidden}
+.seg button{height:34px;padding:0 14px;font-size:12px;font-weight:600;color:var(--text-dim);display:inline-flex;align-items:center;gap:6px;border-right:1px solid var(--stroke-soft);transition:background .2s,color .2s}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--grad-soft);color:#fff}
+.tbtn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border-radius:12px;font-size:12px;font-weight:600;color:var(--text-dim);background:var(--glass);border:1px solid var(--stroke-soft);transition:all .2s}
+.tbtn:hover{color:#fff;border-color:var(--violet);transform:translateY(-1px)}
+.tbtn.on{color:#fff;background:var(--grad-soft);border-color:var(--fuchsia)}
+.tbtn i{font-size:11.5px}
+.tbtn.primary{background:var(--grad);color:#fff;border:none;box-shadow:0 5px 16px -5px rgba(139,92,246,.7)}
+.tbtn.primary:hover{filter:brightness(1.08)}
+.tbtn.danger:hover{color:var(--red);border-color:var(--rose)}
 
-.dl-bar{height:3px;background:var(--bg-2);}
-.dl-bar .fill{height:100%;background:var(--accent);transition:width .4s ease}
-.dl[data-cat="error"] .dl-bar .fill{background:var(--red)}
-.dl[data-cat="finished"] .dl-bar .fill{background:var(--blue)}
-.dl[data-cat="crawling"] .dl-bar .fill{background:var(--amber)}
-.dl-feet{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
-  padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--text-faint);border-top:1px solid var(--line-soft);
+/* ---------- Submenu navigation ---------- */
+.subnav{
+  display:flex;gap:8px;margin:14px 0;padding:6px;border-radius:16px;
+  background:rgba(22,14,46,.55);border:1px solid var(--stroke-soft);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  position:sticky;top:calc(var(--safe-top) + 8px);z-index:40;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;max-width:100%;
 }
-.dl-feet .r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.sp{color:var(--accent)}
+.subnav::-webkit-scrollbar{display:none}
+.subnav-btn{
+  display:inline-flex;align-items:center;gap:7px;flex:1;min-width:max-content;
+  justify-content:center;height:40px;padding:0 14px;border-radius:12px;
+  font-size:12.5px;font-weight:700;color:var(--text-dim);white-space:nowrap;
+  transition:all .2s;
+}
+.subnav-btn i{font-size:12px;color:var(--violet)}
+.subnav-btn b{font-family:var(--mono);font-size:11px;background:var(--glass);border:1px solid var(--stroke-soft);padding:1px 6px;border-radius:8px;color:var(--fuchsia)}
+.subnav-btn:hover{color:#fff;background:var(--glass)}
+.subnav-btn.on{background:var(--grad);color:#fff;box-shadow:0 5px 16px -5px rgba(139,92,246,.7)}
+.subnav-btn.on i,.subnav-btn.on b{color:#fff}
+.subnav-btn.on b{background:rgba(255,255,255,.18);border-color:transparent}
 
-/* erweiterte Aktionsleiste */
+/* ---------- Section: nur aktive sichtbar ---------- */
+.sec[data-active="0"]{display:none}
+
+/* Queue band */
+.qband{
+  display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;
+  margin-bottom:12px;padding:11px 14px;border-radius:var(--r-sm);
+  background:linear-gradient(90deg,rgba(251,191,36,.09),rgba(217,70,239,.08));
+  border:1px solid rgba(251,191,36,.25);font-family:var(--mono);font-size:11.5px;color:var(--text-dim);
+  animation:rise .3s ease both;
+}
+.qband b{font-weight:700;color:#fff}
+.qband .q{color:var(--gold)}
+.qband .ok{color:var(--mint)}
+.qband .bad{color:var(--red)}
+.qband i{color:var(--gold)}
+
+/* ---------- Package cards ---------- */
+.pkg{
+  position:relative;border-radius:var(--radius);overflow:hidden;margin-bottom:12px;
+  background:rgba(22,14,46,.55);border:1px solid var(--stroke-soft);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  box-shadow:var(--shadow);
+  animation:rise .35s ease both;
+  transition:border-color .25s,transform .2s;
+}
+.pkg:hover{border-color:var(--stroke)}
+.pkg.is-open{border-color:var(--violet)}
+.pkg[data-gdl="1"]{border-left:4px solid var(--cyan)}
+.pkg[data-gdl="0"]{border-left:4px solid var(--violet)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.pkg-head{display:flex;align-items:center;gap:11px;padding:14px 15px;cursor:pointer;min-width:0}
+.pkg-main{flex:1;min-width:0}
+.pkg-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.pkg-name{font-family:var(--display);font-weight:700;font-size:14px;word-break:break-word;flex:1;min-width:0}
+.pkg-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:7px}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:6px;
+  font-family:var(--mono);font-size:9.5px;font-weight:600;color:var(--text-dim);background:rgba(255,255,255,.05);border:1px solid var(--stroke-soft);white-space:nowrap;
+}
+.chip.gdl{color:var(--cyan);border-color:rgba(34,211,238,.5);background:rgba(34,211,238,.10)}
+.chip.jd{color:var(--violet);border-color:rgba(139,92,246,.5);background:rgba(139,92,246,.12)}
+.chip.pri{color:var(--gold);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.08)}
+.chip.pri.highest{color:var(--rose);border-color:rgba(244,63,94,.45);background:rgba(244,63,94,.1);animation:priGlow 2s infinite}
+@keyframes priGlow{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.2)}50%{box-shadow:0 0 0 4px rgba(244,63,94,.0)}}
+.chip.err{color:var(--red);border-color:rgba(251,113,133,.45);background:rgba(251,113,133,.1)}
+.chip.files{color:var(--text-dim)}
+/* Tool badges — klares Label */
+.tool-badge{
+  display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:8px;
+  font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap;flex:none;
+}
+.tool-badge.gdl{background:linear-gradient(135deg,#155e75,#0e7490);color:#a5f3fc;border:1px solid rgba(34,211,238,.6);box-shadow:0 3px 10px -3px rgba(34,211,238,.6)}
+.tool-badge.jd{background:linear-gradient(135deg,#4c1d95,#6d28d9);color:#ddd6fe;border:1px solid rgba(167,139,250,.6);box-shadow:0 3px 10px -3px rgba(139,92,246,.6)}
+.status-chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:7px;font-size:11px;font-weight:700;white-space:nowrap;flex:none}
+.s-running{background:rgba(52,211,153,.14);color:var(--mint);border:1px solid rgba(52,211,153,.35);animation:runGlow 1.6s infinite}
+@keyframes runGlow{0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.35)}50%{box-shadow:0 0 10px 0 rgba(52,211,153,.25)}}
+.s-error{background:rgba(244,63,94,.14);color:var(--red);border:1px solid rgba(244,63,94,.4)}
+.s-crawling{background:rgba(251,191,36,.12);color:var(--gold);border:1px solid rgba(251,191,36,.4)}
+.s-finished{background:rgba(34,211,238,.13);color:var(--cyan);border:1px solid rgba(34,211,238,.4)}
+.s-queued{background:rgba(139,92,246,.12);color:var(--violet);border:1px solid rgba(139,92,246,.35)}
+.caret{color:var(--text-faint);transition:transform .25s;flex:none}
+.pkg.is-open .caret{transform:rotate(180deg)}
+
+/* progress bar */
+.pkg-bar{height:5px;background:rgba(0,0,0,.3)}
+.pkg-bar .fill{height:100%;border-radius:0 4px 4px 0;background:var(--grad);background-size:200% 100%;transition:width .45s ease;animation:stripe 4s linear infinite}
+.pkg[data-gdl="1"] .pkg-bar .fill{background:linear-gradient(90deg,#22d3ee,#2dd4bf);background-size:200% 100%}
+.pkg[data-cat="error"] .pkg-bar .fill{background:linear-gradient(90deg,#fb7185,#f43f5e)}
+.pkg[data-cat="finished"] .pkg-bar .fill{background:linear-gradient(90deg,#22d3ee,#10b981);animation:none}
+@keyframes stripe{to{background-position:200% 0}}
+
+.pkg-feet{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 15px;font-family:var(--mono);font-size:11px;color:var(--text-faint);border-top:1px solid var(--stroke-soft)}
+.pkg-feet .r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spd{color:var(--cyan);font-weight:600}
+.pkg-feet i{font-size:10px;color:var(--text-faint)}
+
+/* actions + err strip + files */
 .actions{
-  border-top:1px solid var(--line-soft);padding:8px;display:flex;flex-wrap:wrap;gap:6px;
-  background:var(--bg-2);
+  border-top:1px solid var(--stroke-soft);padding:10px 11px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;
+  background:rgba(10,6,22,.4);
 }
-.actions{animation:fadein .15s ease}
-@keyframes fadein{from{opacity:0;transform:translateY(-2px)}to{opacity:1}}
-
-/* Fehlerstreifen */
+.actions.anim{animation:openUp .22s ease both}
+@keyframes openUp{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .errstrip{
-  display:flex;align-items:center;gap:7px;padding:7px 10px;border-top:1px solid var(--line-soft);
-  background:rgba(255,107,107,.07);color:var(--red);font-size:12px;
+  display:flex;align-items:center;gap:9px;padding:9px 15px;border-top:1px solid rgba(244,63,94,.25);
+  background:rgba(244,63,94,.08);color:var(--red);font-size:12px;flex-wrap:wrap;
 }
-.errstrip svg.ico{width:14px;height:14px}
-
-/* Dateiliste (eingeklappt unter Paket) */
-.files{border-top:1px solid var(--line-soft);background:var(--bg-2);padding:8px}
-.files-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em}
-.fileitem{padding:7px 8px;border-bottom:1px solid var(--line-soft);min-width:0}
+.files{border-top:1px solid var(--stroke-soft);background:rgba(10,6,22,.4);padding:10px 14px}
+.files-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.fileitem{padding:8px 2px;border-bottom:1px solid var(--stroke-soft);min-width:0}
 .fileitem:last-child{border-bottom:none}
-.fileitem .fr{display:flex;align-items:center;gap:8px;min-width:0}
-.fileitem .fn{font-size:12px;color:var(--text);min-width:0}
-.fstatus{font-size:10px;font-family:var(--mono);flex:none;padding:2px 6px;border-radius:4px}
-.fstatus.done{color:var(--blue);background:rgba(90,162,255,.1)}
-.fstatus.run{color:var(--accent);background:rgba(126,224,129,.1)}
-.fstatus.err{color:var(--red);background:rgba(255,107,107,.1)}
-.fstatus.wait{color:var(--text-dim);background:var(--surface-2)}
-.fileitem .fb{height:2px;background:var(--bg);margin-top:6px;border-radius:2px}
-.fileitem .fb .f{height:100%;border-radius:2px;background:var(--accent)}
-.fileitem .fs{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:4px}
+.fileitem .fr{display:flex;align-items:center;gap:9px;min-width:0}
+.fileitem .fn{font-size:12px;min-width:0;flex:1;word-break:break-all}
+.fstatus{font-size:10px;font-family:var(--mono);flex:none;padding:2px 7px;border-radius:5px;font-weight:600;white-space:nowrap}
+.f-done{color:var(--cyan);background:rgba(34,211,238,.1)}
+.f-run{color:var(--mint);background:rgba(52,211,153,.1)}
+.f-err{color:var(--red);background:rgba(244,63,94,.12)}
+.f-wait{color:var(--text-dim);background:rgba(255,255,255,.05)}
+.fileitem .fb{height:3px;background:rgba(0,0,0,.35);margin-top:7px;border-radius:3px;overflow:hidden}
+.fileitem .fb .f{height:100%;border-radius:3px;background:linear-gradient(90deg,#22d3ee,#d946ef);transition:width .4s}
+.fileitem .fs{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:5px}
 
-/* ================= LINKGRABBER-Paket ================= */
-.lg{background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden}
-.lg[data-gdl="1"]{border-left:3px solid var(--cyan)}
-.lg-top{padding:9px 10px 7px;min-width:0}
-.lg-title{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
-.lg-name{font-size:13px;font-weight:600;color:var(--text)}
-.lg-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px;font-family:var(--mono);font-size:11px;color:var(--text-dim);min-width:0}
-.crawl{display:inline-flex;align-items:center;gap:5px;color:var(--amber);animation:blink 1.6s infinite}
-.scan{width:11px;height:11px;border:2px solid var(--amber);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;flex:none}
+/* linkgrabber package */
+.lgp{position:relative;border-radius:var(--radius);overflow:hidden;margin-bottom:12px;
+  background:rgba(22,14,46,.55);border:1px solid var(--stroke-soft);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--shadow);animation:rise .35s ease both}
+.lgp[data-gdl="1"]{border-left:4px solid var(--cyan)}
+.lgp[data-gdl="0"]{border-left:4px solid var(--violet)}
+.lgp-top{padding:13px 15px}
+.lgp-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.lgp-name{font-family:var(--display);font-weight:700;font-size:14px;flex:1;min-width:0;word-break:break-word}
+.crawl{display:inline-flex;align-items:center;gap:6px;color:var(--gold);font-size:11px;font-weight:700}
+.scan{width:12px;height:12px;border:2px solid var(--gold);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.lg-path{
-  display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid var(--line-soft);min-width:0;
-  font-family:var(--mono);font-size:11px;color:var(--text-dim);
-}
-.lg-path .p{flex:1;min-width:0}
-.lg-ops{display:flex;flex-wrap:wrap;gap:6px;padding:7px 10px;border-top:1px solid var(--line-soft);align-items:center;min-width:0}
-.offchip{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 10px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--line);font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap}
-.offchip input{width:16px;height:16px;accent-color:var(--amber)}
+.lgp-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:7px;font-family:var(--mono);font-size:11px;color:var(--text-dim)}
+.lgp-path{display:flex;align-items:center;gap:8px;padding:8px 15px;border-top:1px solid var(--stroke-soft);font-family:var(--mono);font-size:11px;color:var(--text-dim);min-width:0}
+.lgp-path i{color:var(--violet)}
+.lgp-path .p{flex:1;min-width:0;word-break:break-all}
+.lgp-ops{display:flex;flex-wrap:wrap;gap:7px;padding:10px 11px;border-top:1px solid var(--stroke-soft);align-items:center}
+.offchip{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:12px;background:var(--glass);border:1px solid var(--stroke-soft);font-size:11.5px;color:var(--text-dim);cursor:pointer;white-space:nowrap;transition:border-color .2s}
+.offchip:hover{border-color:var(--gold)}
+.offchip input{width:15px;height:15px;accent-color:var(--gold)}
 
-/* ================= ADD LINKS ================= */
-.addbox{display:flex;flex-direction:column;gap:12px}
-.field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:5px}
-input.txt,textarea.txt{
-  width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);
-  padding:10px 11px;color:var(--text);font-family:var(--mono);font-size:14px;
-  transition:border-color .12s;
+/* ---------- Add section ---------- */
+.addcard{border-radius:var(--radius);padding:20px;background:rgba(22,14,46,.55);border:1px solid var(--stroke-soft);backdrop-filter:blur(12px);box-shadow:var(--shadow)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:7px;letter-spacing:.02em}
+.input,textarea.input{
+  width:100%;background:rgba(10,6,22,.5);border:1px solid var(--stroke-soft);border-radius:var(--r-sm);
+  padding:11px 13px;color:var(--text);font-family:var(--mono);font-size:13.5px;
+  transition:border-color .2s,box-shadow .2s;
 }
-textarea.txt{resize:vertical;min-height:120px;line-height:1.5}
-input.txt:focus,textarea.txt:focus{border-color:var(--accent-dim)}
-.checkrow{display:flex;flex-wrap:wrap;gap:8px 16px}
-.checkrow label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;height:38px}
-.checkrow input{width:18px;height:18px;accent-color:var(--accent);flex:none}
-.hint{font-size:11px;color:var(--text-faint)}
-.feedback{padding:9px 11px;border-radius:var(--r-sm);font-size:12px;font-weight:500;border:1px solid;display:none}
-.feedback.ok{display:block;color:var(--accent);background:rgba(126,224,129,.08);border-color:var(--accent-dim)}
-.feedback.err{display:block;color:var(--red);background:rgba(255,107,107,.08);border-color:#4a2020}
+textarea.input{resize:vertical;min-height:130px;line-height:1.6}
+.input:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(139,92,246,.18)}
+.checkrow{display:flex;flex-wrap:wrap;gap:10px 20px;margin-bottom:18px}
+.checkrow label{display:flex;align-items:center;gap:9px;font-size:13px;cursor:pointer;height:34px;transition:color .2s}
+.checkrow label:hover{color:#fff}
+.checkrow input{width:18px;height:18px;accent-color:var(--violet);flex:none;cursor:pointer}
+.hint{font-size:11px;color:var(--text-faint);margin-top:5px}
+.feedback{padding:11px 14px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;margin-top:14px;border:1px solid;display:none;animation:rise .3s ease both}
+.feedback.show{display:block}
+.feedback.ok{color:var(--mint);background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.4)}
+.feedback.err{color:var(--red);background:rgba(244,63,94,.09);border-color:rgba(244,63,94,.4)}
+/* Ordner-Auswahl: kompakte horizontal scrollbare Leiste statt endloser Liste */
+.folder-chips{display:flex;flex-wrap:nowrap;flex-direction:row;gap:6px;margin-top:2px;
+  overflow-x:auto;overflow-y:hidden;max-width:100%;
+  padding:2px 1px 6px;scrollbar-width:thin;-webkit-overflow-scrolling:touch;
+  touch-action:pan-x;}
+.folder-chip{height:30px;padding:0 11px;border-radius:9px;background:rgba(139,92,246,.1);border:1px solid var(--stroke-soft);font-family:var(--mono);font-size:11px;color:var(--text-dim);display:inline-flex;align-items:center;flex:none;white-space:nowrap;transition:all .15s}
+.folder-chip:hover{color:#fff;border-color:var(--violet);transform:translateY(-1px)}
+/* Hardening: kein horizontales Überlaufen aus Containern */
+.sec,#app .toolbox,.addcard,.modal{max-width:100%;overflow-x:hidden}
+#downloadsList,#linkgrabberList{max-width:100%;overflow-x:hidden}
 
-/* ================= Toast ================= */
-#toast{
-  position:fixed;left:50%;transform:translateX(-50%);
-  bottom:calc(16px + var(--safe-bottom));z-index:60;
-  padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;
-  background:var(--surface-2);border:1px solid var(--line);box-shadow:var(--shadow);
-  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:92vw;
-}
-#toast.show{opacity:1}
-#toast.ok{border-color:var(--accent-dim);color:var(--accent)}
-#toast.err{border-color:#4a2020;color:var(--red)}
-
-/* ================= Modal (DirPicker) ================= */
-.overlay{
-  position:fixed;inset:0;z-index:50;background:rgba(4,6,9,.78);
-  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-  display:none;align-items:flex-end;justify-content:center;
-  padding:calc(var(--safe-top) + 16px) 0 calc(var(--safe-bottom) + 16px);
-}
+/* ---------- Modal ---------- */
+.overlay{position:fixed;inset:0;z-index:60;background:rgba(8,4,20,.75);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:18px}
 .overlay.on{display:flex}
-.modal{
-  width:100%;max-width:480px;max-height:86vh;overflow-y:auto;
-  background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 14px 14px;
-  padding:16px;box-shadow:var(--shadow);animation:up .18s ease;margin:0 12px;
-}
-@media(min-width:640px){.overlay{align-items:center}.modal{border-radius:14px}}
-@keyframes up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
-.modal h3{font-size:15px;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:8px}
-.modal .sub{font-size:12px;color:var(--text-dim);margin-bottom:12px}
-.pkg-path{font-family:var(--mono);font-size:11px;color:var(--accent);word-break:break-all}
-.mrow{margin-bottom:10px}
-.mbtn{width:100%;justify-content:flex-start}
-.folder-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
-.folder-chip{
-  height:30px;padding:0 9px;border-radius:6px;background:var(--bg-2);border:1px solid var(--line-soft);
-  font-family:var(--mono);font-size:11px;color:var(--text-dim);display:inline-flex;align-items:center;
-}
-.folder-chip:active{color:var(--accent);border-color:var(--accent-dim)}
-.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.modal{width:100%;max-width:500px;max-height:86vh;overflow-y:auto;border-radius:20px;padding:20px;background:rgba(24,15,50,.92);border:1px solid var(--stroke);box-shadow:var(--shadow);animation:up .22s ease}
+@keyframes up{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+.modal h3{font-family:var(--display);font-size:16px;font-weight:800;margin-bottom:3px;display:flex;align-items:center;gap:9px}
+.modal h3 i{color:var(--violet)}
+.modal .sub{font-size:12px;color:var(--text-dim);margin-bottom:14px;word-break:break-word}
+.pkg-path{font-family:var(--mono);font-size:11px;color:var(--cyan);word-break:break-all;margin-top:2px;display:inline-block}
+.mrow{margin-bottom:14px}
+.mfoot{display:flex;justify-content:flex-end;gap:9px;margin-top:16px}
 
-@media(min-width:640px){
-  .lg-top{padding:10px 12px 8px}
-  .dl-head{padding:10px 12px}
-  .dl-feet{padding:6px 12px}
+/* ---------- Toast ---------- */
+#toast{
+  position:fixed;left:50%;transform:translateX(-50%) translateY(16px);z-index:80;
+  bottom:calc(18px + var(--safe-bottom));padding:11px 17px;border-radius:14px;
+  font-size:13px;font-weight:600;max-width:92vw;text-align:center;
+  background:rgba(24,15,50,.95);border:1px solid var(--stroke);box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
 }
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{border-color:rgba(52,211,153,.5);color:var(--mint)}
+#toast.err{border-color:rgba(244,63,94,.5);color:var(--red)}
 
-/* Scrollbars (Desktop) */
-::-webkit-scrollbar{width:8px;height:8px}
-::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+/* empty state */
+.empty{text-align:center;padding:44px 16px;color:var(--text-faint);font-size:13px;border:1px dashed var(--stroke-soft);border-radius:var(--radius)}
+.empty i{font-size:22px;color:var(--violet);opacity:.6;display:block;margin-bottom:10px}
+
+/* focus + scrollbar */
+:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--violet),var(--fuchsia));border-radius:5px}
 ::-webkit-scrollbar-track{background:transparent}
-
-/* Fokus sichtbar (Accessibility) */
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent-dim);outline-offset:1px}
 </style>
 </head>
 <body>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+
 <div id="app">
   <!-- ============ HEADER ============ -->
   <header>
-    <div class="inner">
-      <div class="brand">
-        <span class="logo" aria-hidden="true">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        </span>
-        <div class="name">
-          <h1>JDownloader Console</h1>
-          <div class="status">
-            <span id="dot" class="dot"></span>
-            <span id="connText" class="ellip">Verbinde…</span>
-          </div>
+    <div class="brand">
+      <div class="logo"><i class="fa-solid fa-bolt"></i></div>
+      <div style="min-width:0">
+        <div class="tag">Test Dashboard</div>
+        <h1>JD Flux</h1>
+        <div class="connRow">
+          <span id="pulse" class="pulse"></span>
+          <span id="connText">Verbinde…</span>
+          <span id="devName" style="opacity:.6">—</span>
         </div>
       </div>
-      <div class="hdr-chips">
-        <span id="diskChip" class="chip" style="display:none" title="Freier Speicher">
-          <svg class="ico sm" viewBox="0 0 24 24"><path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
-          <span id="diskFree">--</span>
-        </span>
-        <span id="speedChip" class="chip bar" style="display:none">
-          <svg class="ico sm" viewBox="0 0 24 24"><path d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-          <span id="speedText">0 B/s</span>
-        </span>
-        <button id="pauseBtn" class="pause-btn" onclick="togglePause()" aria-label="Pause / Resume">
-          <svg class="ico sm" id="pauseIcon" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
-          <span id="pauseLbl" class="ellip">Pause</span>
-        </button>
-      </div>
+    </div>
+    <div class="hdrControls">
+      <span id="diskPill" class="pill hidden" title=""><i class="fa-solid fa-hard-drive"></i><span id="diskFree">--</span></span>
+      <span id="speedPill" class="pill hidden" title="Gesamtspeed"><i class="fa-solid fa-gauge-high"></i><span class="f" id="speedText">0 B/s</span></span>
+      <button id="pauseBtn" class="ctrlBtn" onclick="togglePause()">
+        <i class="fa-solid" id="pauseIcon"></i><span id="pauseLbl">Pause</span>
+      </button>
     </div>
   </header>
 
-  <!-- ============ TABS ============ -->
-  <nav class="tabs" role="tablist">
-    <button id="tabDownloads" class="tab active" role="tab" onclick="switchTab('downloads')">
-      <svg class="ico sm" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-      <span class="ellip">Downloads</span>
-      <span id="dlBadge" class="badge">0</span>
-    </button>
-    <button id="tabLinkgrabber" class="tab" role="tab" onclick="switchTab('linkgrabber')">
-      <svg class="ico sm" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-      <span class="ellip">Grabber</span>
-      <span id="lgBadge" class="badge">0</span>
-    </button>
-    <button id="tabAdd" class="tab" role="tab" onclick="switchTab('add')">
-      <svg class="ico sm" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>
-      <span class="ellip">Add</span>
-    </button>
+  <!-- ============ STAT TILES ============ -->
+  <div class="stats">
+    <div class="stat speed">
+      <div class="ico"><i class="fa-solid fa-gauge-high"></i></div>
+      <div class="lbl">Gesamtspeed</div>
+      <div class="val" id="statSpeed">0 B/s</div>
+      <div class="sub" id="statSpeedSub">im Leerlauf</div>
+    </div>
+    <div class="stat active">
+      <div class="ico"><i class="fa-solid fa-circle-down"></i></div>
+      <div class="lbl">Aktive Downloads</div>
+      <div class="val" id="statActive">0</div>
+      <div class="sub" id="statActiveSub">0 laufen</div>
+    </div>
+    <div class="stat disk">
+      <div class="ico"><i class="fa-solid fa-hard-drive"></i></div>
+      <div class="lbl">Freier Speicher</div>
+      <div class="val" id="statDisk">--</div>
+      <div class="sub" id="statDiskSub">-- belegt</div>
+    </div>
+    <div class="stat queue">
+      <div class="ico"><i class="fa-solid fa-list-ol"></i></div>
+      <div class="lbl">Warteschlange</div>
+      <div class="val" id="statQueue">0</div>
+      <div class="sub" id="statQueueSub">genügend Platz</div>
+    </div>
+  </div>
+
+  <!-- ============ SUBMENÜ-NAVIGATION ============ -->
+  <nav class="subnav">
+    <button class="subnav-btn on" data-sec="secDownloads" onclick="showSection('secDownloads',this)"><i class="fa-solid fa-circle-down"></i>Downloads <b id="subDlCount">0</b></button>
+    <button class="subnav-btn" data-sec="secLinkgrabber" onclick="showSection('secLinkgrabber',this)"><i class="fa-solid fa-list-check"></i>Linkgrabber <b id="subLgCount">0</b></button>
+    <button class="subnav-btn" data-sec="secAdd" onclick="showSection('secAdd',this)"><i class="fa-solid fa-plus"></i>Hinzufügen</button>
   </nav>
 
-  <!-- ============ TAB: DOWNLOADS ============ -->
-  <section id="panelDownloads" class="panel on">
-    <div class="toolbar">
-      <div class="seg" role="tablist">
-        <button id="modeActive" class="on" onclick="setMode('active')">Aktiv</button>
-        <button id="modeAll" onclick="setMode('all')">Alle</button>
-      </div>
-      <button id="btn24h" class="btn" onclick="toggle24h()" title="Nur letzte 24 Stunden">
-        <span id="dot24" class="dot" style="background:var(--text-faint)"></span>
-        24h
-      </button>
-      <div class="grow"></div>
-      <button class="btn tint" onclick="filterVideosInQueue(null,'downloads')" title="Nicht-Video-Dateien aus der gesamten Queue entfernen">
-        <svg class="ico sm" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M10 9.5l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
-        Videos only
-      </button>
-      <span class="live"><span class="lt"></span>Live</span>
+  <!-- ============ SECTION: DOWNLOADS ============ -->
+  <section class="sec" id="secDownloads">
+    <div class="sec-head">
+      <h2><i class="fa-solid fa-circle-down"></i> Aktive Downloads</h2>
+      <span class="sec-badge" id="dlCount">0</span>
+      <div class="spacer"></div>
+      <span class="liveTag"><span class="liveDot"></span>Live</span>
     </div>
-
-    <div class="confirmband" id="queueBand" style="display:none">
+    <div class="toolbox">
+      <div class="seg">
+        <button id="modeActive" class="on" onclick="setMode('active')"><i class="fa-solid fa-bolt"></i>Aktiv</button>
+        <button id="modeAll" onclick="setMode('all')"><i class="fa-solid fa-layer-group"></i>Alle</button>
+      </div>
+      <button id="btn24h" class="tbtn" onclick="toggle24h()" title="Nur letzte 24 Stunden"><i class="fa-solid fa-clock" id="ico24"></i>24h</button>
+      <div class="spacer" style="flex:1"></div>
+      <button class="tbtn" onclick="filterVideosInQueue(null,'downloads')" title="Nicht-Video-Dateien aus der gesamten Queue entfernen"><i class="fa-solid fa-film"></i>Videos only</button>
+    </div>
+    <div id="queueBand" class="qband hidden">
+      <i class="fa-solid fa-hourglass-half"></i>
       <span>Queue: <b class="q" id="qRemain">--</b></span>
-      <span>Danach frei: <b id="qAfter" class="left ok">--</b></span>
+      <span>Danach frei: <b id="qAfter" class="ok">--</b></span>
     </div>
-
-    <div id="downloadsList" class="list"></div>
+    <div id="downloadsList"></div>
   </section>
 
-  <!-- ============ TAB: LINKGRABBER ============ -->
-  <section id="panelLinkgrabber" class="panel">
-    <div class="toolbar">
-      <div class="grow"></div>
-      <button class="btn tint" onclick="filterVideosInQueue(null,'linkgrabber')" title="Alle Nicht-Video-Dateien aus allen Paketen entfernen">
-        <svg class="ico sm" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M10 9.5l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
-        Videos only
-      </button>
-      <button class="btn ok" onclick="downloadAllLinkgrabber()">
-        <svg class="ico sm" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Download All
-      </button>
+  <!-- ============ SECTION: LINKGRABBER ============ -->
+  <section class="sec" id="secLinkgrabber">
+    <div class="sec-head">
+      <h2><i class="fa-solid fa-list-check"></i> Linkgrabber</h2>
+      <span class="sec-badge" id="lgCount">0</span>
+      <div class="spacer"></div>
+      <span class="liveTag"><span class="liveDot"></span>Live</span>
     </div>
-    <div id="linkgrabberList" class="list"></div>
+    <div class="toolbox">
+      <div class="spacer" style="flex:1"></div>
+      <button class="tbtn" onclick="filterVideosInQueue(null,'linkgrabber')" title="Alle Nicht-Video-Dateien entfernen"><i class="fa-solid fa-film"></i>Videos only</button>
+      <button class="tbtn primary" onclick="downloadAllLinkgrabber()"><i class="fa-solid fa-play"></i>Download All</button>
+    </div>
+    <div id="linkgrabberList"></div>
   </section>
 
-  <!-- ============ TAB: ADD LINKS ============ -->
-  <section id="panelAdd" class="panel">
-    <div class="addbox">
-      <div>
-        <p style="font-size:13px;font-weight:700;margin-bottom:2px">Neue Links</p>
-        <p class="hint">Links einfügen – werden im Grabber gesammelt und einzeln oder gemeinsam gestartet.</p>
-      </div>
-
+  <!-- ============ SECTION: ADD ============ -->
+  <section class="sec" id="secAdd">
+    <div class="sec-head">
+      <h2><i class="fa-solid fa-plus"></i> Hinzufügen</h2>
+    </div>
+    <div class="addcard">
       <div class="field">
         <label for="linksInput">Links</label>
-        <textarea id="linksInput" class="txt" rows="5" placeholder="Link pro Zeile oder durch Leerzeichen getrennt…"></textarea>
+        <textarea id="linksInput" class="input" rows="5" placeholder="Link pro Zeile oder durch Leerzeichen getrennt…"></textarea>
+        <p class="hint">Links werden im Grabber gesammelt und einzeln oder gemeinsam gestartet.</p>
       </div>
-
       <div class="field">
-        <label for="addDestinationFolder" style="display:flex;justify-content:space-between;align-items:center">
+        <label for="addDestinationFolder" style="display:flex;align-items:center;gap:8px">
           Zielordner (optional)
-          <button type="button" class="btn mini" onclick="promptCreateFolder('addDestinationFolder')">
-            <svg class="ico sm" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>
-            New Folder
-          </button>
+          <button type="button" class="tbtn" style="height:28px;padding:0 10px" onclick="promptCreateFolder('addDestinationFolder')"><i class="fa-solid fa-folder-plus"></i>New Folder</button>
         </label>
-        <input id="addDestinationFolder" class="txt" list="folderSuggestions" placeholder="/output oder Ordnername wie Movies…">
+        <input id="addDestinationFolder" class="input" list="folderSuggestions" placeholder="Ordner wie Movies oder /output…">
         <datalist id="folderSuggestions"></datalist>
-        <p class="hint" style="margin-top:4px">Leer = JDownloader-Standard. Bestehenden Ordner wählen oder neu anlegen.</p>
+        <div class="folder-chips" id="addFolderChips"></div>
+        <p class="hint">Leer = Standard/POST-entsprechend. Bestehenden Ordner wählen oder neu anlegen.</p>
       </div>
-
       <div class="checkrow">
-        <label><input type="checkbox" id="chkVideosOnly"> Videos only (Bilder &amp; Text ignorieren)</label>
-        <label><input type="checkbox" id="chkAutostart"> Direkt in Downloadliste &amp; starten</label>
+        <label><input type="checkbox" id="chkVideosOnly"> <i class="fa-solid fa-film" style="color:var(--violet)"></i> Videos only (Bilder &amp; Text ignorieren)</label>
+        <label><input type="checkbox" id="chkAutostart"> <i class="fa-solid fa-bolt" style="color:var(--fuchsia)"></i> Direkt starten</label>
       </div>
-
-      <div>
-        <button class="btn ok" style="height:44px;padding:0 18px;font-size:13px" onclick="submitLinks()">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>
-          Senden
-        </button>
-        <div id="addFeedback" class="feedback" style="margin-top:10px"></div>
-      </div>
+      <button class="tbtn primary" style="height:44px;padding:0 22px;font-size:13.5px" onclick="submitLinks()"><i class="fa-solid fa-paper-plane"></i>Senden</button>
+      <div id="addFeedback" class="feedback"></div>
     </div>
   </section>
 
-  <!-- ============ FOOTER ============ -->
-  <p style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-faint);padding:14px 0 4px">
-    JDownloader WebUI · Console</p>
+  <p style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-faint);padding:18px 0 4px">
+    JD Flux · Test-Dashboard · JDownloader + gallery-dl</p>
 </div>
 
 <!-- ============ MODAL: Zielordner ============ -->
 <div id="dirOverlay" class="overlay">
   <div class="modal" role="dialog" aria-modal="true" aria-label="Zielordner festlegen">
-    <h3>
-      <svg class="ico" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/></svg>
-      Zielordner festlegen
-    </h3>
+    <h3><i class="fa-solid fa-folder"></i> Zielordner festlegen</h3>
     <div class="sub">
-      Paket: <span id="dirPkg" class="ellip" style="display:inline-block;max-width:100%"></span><br>
+      Paket: <span id="dirPkg"></span><br>
       Aktuell: <span id="dirCur" class="pkg-path"></span>
     </div>
-    <div class="req">
-      <div class="field mrow">
-        <label for="dirInput">Pfad oder Ordnername</label>
-        <input id="dirInput" class="txt" list="folderSuggestions" placeholder="/output oder Ordnername…">
-      </div>
-      <div class="mrow">
-        <div class="folder-chips" id="dirFolderChips"></div>
-      </div>
+    <div class="field mrow">
+      <label for="dirInput">Pfad oder Ordnername</label>
+      <input id="dirInput" class="input" list="folderSuggestions" placeholder="Ordner oder /output/…">
+    </div>
+    <div class="mrow">
+      <div class="folder-chips" id="dirFolderChips"></div>
     </div>
     <div class="mfoot">
-      <button class="btn" onclick="closeDirModal()">Abbrechen</button>
-      <button class="btn ok" onclick="saveDirModal()">Speichern</button>
+      <button class="tbtn" onclick="closeDirModal()">Abbrechen</button>
+      <button class="tbtn primary" onclick="saveDirModal()"><i class="fa-solid fa-check"></i>Speichern</button>
     </div>
   </div>
 </div>
@@ -529,190 +559,174 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 /* ============================================================
    STATE
    ============================================================ */
-const State = {
-  isPaused:false,
-  only24h:false,
-  mode:'active',
-  tab:'downloads',
-  expandedPkg:null,          // aufklappbare Aktionsleiste (Downloads)
-  openDlFiles:null,          // offene Dateiliste Downloads
-  openLgFiles:null,          // offene Dateiliste Linkgrabber
-  dirTarget:null,            // Paket-uuid für DirModal
+const State={
+  isPaused:false, only24h:false, mode:'active',
+  expandedPkg:null,       // aufgeklappte Paket-Aktionen (Downloads)
+  openDlFiles:null,       // offene Dateiliste Downloads
+  openLgFiles:null,       // offene Dateiliste Linkgrabber
+  dirTarget:null,         // Paket-uuid im Dir-Modal
   folders:[],
   filesCache:{},
+  lastLg:{},              // letzte Linkgrabber-Daten für crawling-Flag
   busy:{status:false,dl:false,lg:false},
 };
 
 /* ============================================================
    UTILS
    ============================================================ */
-function esc(s){if(s===null||s===undefined)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function esc(s){if(s===null||s===undefined)return'';return String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function $(id){return document.getElementById(id);}
+function isGdl(p){return p&&(String(p.uuid||'').startsWith('gdl_')||p.source==='gallery-dl');}
+function icon(i){return '<i class="fa-solid fa-'+esc(i)+'"></i>';}
 async function post(path,body){
-  const res=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  let res;
+  try{res=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});}
+  catch(e){return {ok:false,d:{detail:'Netzwerkfehler'}};}
   let d=null;try{d=await res.json();}catch(e){}
   return {ok:res.ok,d:d||{}};
 }
 function toast(text,isErr){
   const t=$('toast');t.textContent=text;
   t.className='show '+(isErr?'err':'ok');
-  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200);
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3000);
 }
-function openConfirm(msg){ // iOS-sichere Bestätigung
-  if(window.confirm)return window.confirm(msg);
-  return true;
-}
+function openConfirm(msg){if(window.confirm)return window.confirm(msg);return true;}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 
 /* ============================================================
-   ICONS — einheitliches Inline-SVG-System (keine Emojis)
+   TOOL-KENNZEICHNUNG — klar sichtbar, mit SVG-artigem Icon
    ============================================================ */
-const ICS={
-  video:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M10 9.5l5 3-5 3z" fill="currentColor" stroke="none"/>',
-  film:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 10h4M3 14h4M17 10h4M17 14h4"/>',
-  folder:'<path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/>',
-  trash:'<path d="M19 7l-.9 12.1A2 2 0 0 1 16.1 21H7.9a2 2 0 0 1-2-1.9L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>',
-  files:'<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.6a1 1 0 0 1 .7.3l5.4 5.4a1 1 0 0 1 .3.7V19a2 2 0 0 1-2 2z"/>',
-  bolt:'<path d="M13 10V3L4 14h7v7l9-11h-7z"/>',
-  up:'<path d="M12 5v14M5 12l7-7 7 7"/>',
-  down:'<path d="M12 19V5M5 12l7 7 7-7"/>',
-  scan:'<path d="M4 4v5M4 20v-5M9 4h2M13 4h2M20 4v5M20 20v-5M9 20h2M13 20h2"/>',
-  refresh:'<path d="M4 4v5h.6M20 20v-5h-.6M4 9h4M20 15h-4"/><path d="M4.6 9A8 8 0 0 1 19 6.5M20 15a8 8 0 0 1-14 2.5"/>',
-  err:'<path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>',
-  check:'<path d="M20 6L9 17l-5-5"/>',
-  cam:'<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/>',
-  gdl:'<path d="M12 21C7 21 3 16.6 3 12s4-9 9-9 9 4.4 9 9-4 9-9 9z"/><circle cx="12" cy="12" r="4"/>',
-};
-function I(name,cls){
-  return '<svg class="ico'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">'+(ICS[name]||'')+'</svg>';
+function toolBadge(p){
+  const gdl=isGdl(p);
+  if(gdl){
+    return '<span class="tool-badge gdl" title="Dieses Paket lädt mit gallery-dl">'
+      +'<i class="fa-solid fa-camera"></i>gallery-dl</span>';
+  }
+  return '<span class="tool-badge jd" title="Dieses Paket lädt mit JDownloader">'
+    +'<i class="fa-solid fa-arrow-down-long"></i>JDownloader</span>';
 }
-
-/* ============================================================
-   RENDER — DOWNLOADS
-   ============================================================ */
 function catChip(p){
   const c=p.category||'queued';
-  let label=c.charAt(0).toUpperCase()+c.slice(1);
+  let label=cap(c);
   if(c==='crawling')label='Scannt';
   if(c==='running')label='Läuft';
   if(c==='queued')label='Wartet';
   if(c==='finished')label='Fertig';
   if(c==='error')label='Fehler';
-  return `<span class="status-chip ${esc(c)}">${label}</span>`;
+  return '<span class="status-chip s-'+esc(c)+'">'+esc(label)+'</span>';
 }
 function prioChip(p){
   if(!p.priority||p.priority==='DEFAULT')return'';
-  return `<span class="meta-chip pri${esc(p.priority)}">${p.priority==='HIGHEST'?I('bolt','sm'):''}${esc(p.priority)}</span>`;
-}
-function gdlChip(p){
-  if(p.source!=='gallery-dl')return'';
-  return `<span class="meta-chip dl-badge" title="Downloader: gallery-dl">${I('gdl','sm')}gallery-dl</span>`;
+  const hi=p.priority==='HIGHEST';
+  return '<span class="chip pri'+(hi&&p.is_prioritized?' highest':'')+'">'
+    +(hi?'<i class="fa-solid fa-bolt"></i>':'')+esc(p.priority)+'</span>';
 }
 function dlMetaChips(p){
-  const t=p.files_total||0, d=p.files_done||0, e=p.files_error||0;
-  let h='';
-  h+=gdlChip(p)+prioChip(p);
-  if(t>1)h+=`<span class="meta-chip">${d}/${t} Datei${t>1?'en':''}</span>`;
-  if(e>0)h+=`<span class="meta-chip" style="color:var(--red);border-color:#4a2020">${e} ✕</span>`;
+  const t=p.files_total||0,d=p.files_done||0,e=p.files_error||0;
+  let h=toolBadge(p)+prioChip(p);
+  if(t>1)h+='<span class="chip files">'+icon('file')+d+'/'+t+' Dateien</span>';
+  if(e>0)h+='<span class="chip err">'+icon('triangle-exclamation')+e+' fehlerhaft</span>';
   return h;
 }
+
+/* ============================================================
+   RENDER — Dateiliste
+   ============================================================ */
 function renderFileItem(f){
   let st='wait',lbl=esc(f.status||'Wartet');
   if(f.finished){st='done';lbl='Fertig';}
   else if(f.running){st='run';lbl='Lädt';}
   else if(f.status&&f.status.toLowerCase().includes('error')){st='err';lbl='Fehler';}
-  const bar=f.running||f.finished?`<div class="fb"><div class="f" style="width:${Math.min(100,f.percent)}%"></div></div>`:'';
-  const speed=f.speed_formatted?`<span style="color:var(--accent)">${esc(f.speed_formatted)}</span>`:'';
-  const eta=f.eta_formatted?`<span>ETA ${esc(f.eta_formatted)}</span>`:'';
-  return `<div class="fileitem">
-    <div class="fr">
-      <span class="fn ellip" title="${esc(f.name)}">${esc(f.name)}</span>
-      <span class="fstatus ${st}">${lbl}</span>
-    </div>
-    ${bar}
-    <div class="fs"><span>${esc(f.bytes_loaded_formatted)} / ${esc(f.bytes_total_formatted)} (${f.percent}%)</span><span class="elip">${speed}${eta}</span></div>
-  </div>`;
+  const bar=(f.running||f.finished)?'<div class="fb"><div class="f" style="width:'+Math.min(100,f.percent||0)+'%"></div></div>':'';
+  const speed=f.speed_formatted?'<span style="color:var(--cyan)">'+esc(f.speed_formatted)+'</span>':'';
+  const eta=f.eta_formatted?'<span>ETA '+esc(f.eta_formatted)+'</span>':'';
+  return '<div class="fileitem">'
+    +'<div class="fr"><span class="fn" title="'+esc(f.name)+'">'+esc(f.name)+'</span><span class="fstatus f-'+st+'">'+lbl+'</span></div>'
+    +bar
+    +'<div class="fs"><span>'+esc(f.bytes_loaded_formatted)+' / '+esc(f.bytes_total_formatted)+' ('+(f.percent||0)+'%)</span><span>'+speed+' '+eta+'</span></div>'
+    +'</div>';
 }
 function filesBlock(pkgId,source){
   const files=State.filesCache[pkgId];
   const src=(source==='lg')?'linkgrabber':(source==='gdl'?'gallery-dl':'downloads');
   let body;
-  if(!files){body=`<div style="padding:14px;text-align:center;font-size:12px;color:var(--text-faint)">Lade Dateiliste…</div>`;}
-  else if(!files.length){body=`<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien gefunden.</div>`;}
-  else{body=files.map(renderFileItem).join('');}
-  const label = source==='lg' ? 'Gefundene Dateien' : 'Enthaltene Dateien';
-  return `<div class="files">
-    <div class="files-h">
-      <span>${label}</span>
-      <button class="btn mini" onclick="fetchPackageFiles('${esc(pkgId)}','${src}')">${I('refresh','sm')}Aktualisieren</button>
-    </div>
-    <div id="fc_${esc(pkgId)}">${body}</div>
-  </div>`;
+  if(!files)body='<div style="padding:14px;text-align:center;font-size:12px;color:var(--text-faint)">Lade Dateiliste…</div>';
+  else if(!files.length)body='<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien gefunden.</div>';
+  else body=files.map(renderFileItem).join('');
+  const label=source==='lg'?'Gefundene Dateien':'Enthaltene Dateien';
+  return '<div class="files">'
+    +'<div class="files-h"><span>'+label+'</span>'
+    +'<button class="tbtn" style="height:26px;padding:0 9px" onclick="fetchPackageFiles(\''+esc(pkgId)+'\',\''+src+'\')">'+icon('rotate')+'Aktualisieren</button></div>'
+    +'<div id="fc_'+esc(pkgId)+'">'+body+'</div>'
+    +'</div>';
 }
+
+/* ============================================================
+   RENDER — DOWNLOADS
+   ============================================================ */
 function renderDownloadPackage(p){
   const id=esc(p.uuid);
-  const gdl=p.source==='gallery-dl';
+  const gdl=isGdl(p);
   const cat=p.category||'queued';
   const open=State.expandedPkg===p.uuid;
   const filesOpen=State.openDlFiles===p.uuid;
   const fileSrc=gdl?'gallery-dl':'downloads';
-  const speed=p.speed>0?`<span class="sp">${esc(p.speed_formatted)}</span>`:'';
-  const eta=p.eta>0?`<span>ETA ${esc(p.eta_formatted)}</span>`:'';
+  const speed=p.speed>0?'<span class="spd">'+icon('gauge-high')+esc(p.speed_formatted)+'</span>':'';
+  const eta=p.eta>0?'<span>ETA '+esc(p.eta_formatted)+'</span>':'';
   const pct=Math.max(0,Math.min(100,p.percent||0));
   const pctTxt=Number.isFinite(pct)?(Math.round(pct*10)/10):0;
 
-  // Bytes-Zeile: bei gallery-dl laufend zusätzlich Datei-Fortschritt
-  let bytesTimezone=`${esc(p.bytes_loaded_formatted)} <span class="muted">/ ${esc(p.bytes_total_formatted)}</span> <span style="color:var(--text-faint)">( ${pctTxt}% )</span>`;
+  let bytes=''+esc(p.bytes_loaded_formatted)+' <span style="opacity:.6">/ '+esc(p.bytes_total_formatted)+'</span> <span style="opacity:.5">('+pctTxt+'%)</span>';
   if(gdl&&cat==='running'){
-    bytesTimezone=`${esc(p.bytes_loaded_formatted)} / ${esc(p.bytes_total_formatted)} · ${p.files_done||0}/${p.files_total||0} Dateien <span style="color:var(--accent)">(${pctTxt}%)</span>`;
+    bytes=''+esc(p.bytes_loaded_formatted)+' <span style="opacity:.6">/ '+esc(p.bytes_total_formatted)+'</span> · '+(p.files_done||0)+'/'+(p.files_total||0)+' Dateien <span class="spd">('+pctTxt+'%)</span>';
   }
 
   let actions='';
   if(open){
     let controls='';
+    const insertMark=(p.files_total?p.files_total:0)+'';
     if(!gdl){
-      controls=`
-        <div class="seg">
-          <button onclick="movePackage('${id}','up',event)" title="Um 1 nach oben">${I('up','sm')}</button>
-          <button onclick="movePackage('${id}','down',event)" title="Um 1 nach unten">${I('down','sm')}</button>
-        </div>
-        <button class="btn" onclick="prioritizePackage('${id}',event)" title="Priorität: Normal → Hoch → Höchste">${I('bolt','sm')}Priorität</button>
-        <button class="btn tint" onclick="filterVideosInQueue('${id}','downloads',event)">${I('video','sm')}Videos only</button>
-        ${p.is_error?`<button class="btn tint" title="Fehlgeschlagene Dateien erneut versuchen" onclick="retryDownload('${id}',event)">${I('refresh','sm')}Wiederholen</button>`:''}`;
+      controls=''
+        +'<div class="seg"><button title="Nach oben" onclick="movePackage(\''+id+'\',\'up\',event)">'+icon('arrow-up')+'</button>'
+        +'<button title="Nach unten" onclick="movePackage(\''+id+'\',\'down\',event)">'+icon('arrow-down')+'</button></div>'
+        +'<button class="tbtn" title="Priorität: Normal → Hoch → Höchste" onclick="prioritizePackage(\''+id+'\',event)">'+icon('bolt')+'Priorität</button>'
+        +'<button class="tbtn" onclick="filterVideosInQueue(\''+id+'\',\'downloads\',event)">'+icon('film')+'Videos only</button>';
+      if(p.is_error)controls+='<button class="tbtn" title="Erneut versuchen (JD)" onclick="retryDownloadJD(\''+id+'\',event)">'+icon('rotate')+'Wiederholen</button>';
+    }else{
+      if(p.is_error)controls+='<button class="tbtn" title="Fehlgeschlagene Dateien erneut versuchen (gallery-dl)" onclick="retryDownload(\''+id+'\',event)">'+icon('rotate')+'Wiederholen</button>';
+      controls+='<button class="tbtn" onclick="filterVideosInQueue(\''+id+'\',\'gallery-dl\',event)">'+icon('film')+'Videos only</button>';
     }
-    actions=`
-    <div class="actions" onclick="event.stopPropagation()">
-      <button class="btn" onclick="togglePackageFiles('${id}','downloads',event)">${I('files','sm')}
-        ${filesOpen?'Dateien ausblenden':'Dateien anzeigen ('+ (p.files_total||0) +')'}</button>
-      ${controls}
-      <button class="btn danger" onclick="deletePackage('${id}','${gdl?'gallery-dl':'downloads'}',event)">${I('trash','sm')}Löschen</button>
-    </div>`;
+    actions='<div class="actions anim" onclick="event.stopPropagation()">'
+      +'<button class="tbtn" onclick="togglePackageFiles(\''+id+'\',\'downloads\',event)">'+icon('folder-open')
+      +(filesOpen?'Dateien ausblenden':'Dateien anzeigen ('+insertMark+')')+'</button>'
+      +controls
+      +'<button class="tbtn danger" onclick="deletePackage(\''+id+'\',\''+(gdl?'gallery-dl':'downloads')+'\',event)">'+icon('trash')+'Löschen</button>'
+      +'</div>';
   }
 
-  const errStrip=p.is_error?`<div class="errstrip">${I('err')}${esc(p.status)}
-      ${gdl?`<button class="btn sm tint" title="Fehlgeschlagene Dateien erneut versuchen" onclick="retryDownload('${id}',event)">${I('refresh','sm')}Wiederholen</button>`:''}
-    </div>`:'';
+  const errStrip=p.is_error?'<div class="errstrip">'+icon('triangle-exclamation')+'<span style="flex:1;min-width:0">'+esc(p.status)+'</span>'
+      +(gdl?'<button class="tbtn danger" onclick="retryDownload(\''+id+'\',event)">'+icon('rotate')+'Wiederholen</button>'
+           :'<button class="tbtn danger" onclick="retryDownloadJD(\''+id+'\',event)">'+icon('rotate')+'Wiederholen</button>')
+      +'</div>':'';
   const fileBlock=filesOpen?filesBlock(p.uuid,gdl?'gdl':'dl'):'';
+  const sig=[p.name, cat, p.is_error?'err':'', p.source||''].join('|');
 
-  return `<div class="dl ${open?'is-open':''}" data-cat="${esc(cat)}">
-    <div class="dl-head" onclick="togglePackageActions('${id}',event)">
-      <div class="dl-main">
-        <div class="dl-title">
-          <span class="dl-name ellip-2" title="${esc(p.name)}">${esc(p.name)}</span>
-          ${catChip(p)}
-        </div>
-        <div class="dl-meta">${dlMetaChips(p)}</div>
-      </div>
-      <svg class="ico dl-caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-    </div>
-    <div class="dl-bar"><div class="fill" style="width:${pct}%"></div></div>
-    <div class="dl-feet">
-      <span class="fix">${bytesTimezone}</span>
-      <span class="r fix">${speed}${eta}</span>
-    </div>
-    ${actions}
-    ${fileBlock}
-    ${errStrip}
-  </div>`;
+  return '<div class="pkg '+(open?'is-open':'')+'" data-key="'+esc(p.uuid)+'" data-sig="'+esc(sig)+'" data-gdl="'+(gdl?1:0)+'" data-cat="'+esc(cat)+'">'
+    +'<div class="pkg-head" onclick="togglePackageActions(\''+id+'\',event)">'
+    +'<div class="pkg-main">'
+    +'<div class="pkg-title"><span class="pkg-name" title="'+esc(p.name)+'">'+esc(p.name)+'</span>'+catChip(p)+'</div>'
+    +'<div class="pkg-meta">'+dlMetaChips(p)+'</div>'
+    +'</div>'
+    +'<i class="fa-solid fa-chevron-down caret"></i>'
+    +'</div>'
+    +'<div class="pkg-bar"><div class="fill" style="width:'+pct+'%"></div></div>'
+    +'<div class="pkg-feet"><span>'+bytes+'</span><span class="r">'+speed+eta+'</span></div>'
+    +actions
+    +fileBlock
+    +errStrip
+    +'</div>';
 }
 
 /* ============================================================
@@ -720,86 +734,105 @@ function renderDownloadPackage(p){
    ============================================================ */
 function renderLinkgrabberPackage(p){
   const id=esc(p.uuid);
-  const gdl=p.source==='gallery-dl';
+  const gdl=isGdl(p);
   const total=p.files_total||1;
   const savePath=p.save_to||'/output';
   const filesOpen=State.openLgFiles===p.uuid;
-  const crawl=(gdl&&p.crawling)?`<span class="crawl"><span class="scan"></span>Scannt</span>`:'';
-  const sizeTxt=p.bytes_total_formatted&&p.bytes_total_formatted!=='--'?`Size: ${esc(p.bytes_total_formatted)}`:'';
-
-  const offline=!gdl?`<label class="offchip" title="Auch als offline markierte Links versuchen">
-      <input type="checkbox" id="off_${id}"> Force offline
-    </label>`:'';
-
+  const crawl=(gdl&&(p.crawling||State.lastLg[id]&&State.lastLg[id].crawling))?'<span class="crawl"><span class="scan"></span>Scannt</span>':'';
+  const sizeTxt=(p.bytes_total_formatted&&p.bytes_total_formatted!=='--')?'Size: '+esc(p.bytes_total_formatted):'';
+  const offline=!gdl
+    ?'<label class="offchip" title="Auch als offline markierte Links versuchen"><input type="checkbox" id="off_'+id+'"> Force offline</label>'
+    :'<span class="chip gdl" style="height:34px">'+icon('camera')+'gallery-dl</span>';
   const fileBlock=filesOpen?filesBlock(p.uuid,'lg'):'';
 
-  return `<div class="lg" data-gdl="${gdl?'1':'0'}">
-    <div class="lg-top">
-      <div class="lg-title">
-        <span class="lg-name ellip-2" title="${esc(p.name)}">${esc(p.name)}</span>
-        ${gdl?`<span class="meta-chip dl-badge">${I('gdl','sm')}gallery-dl</span>`:''}
-        ${crawl}
-        <span class="meta-chip">${total} Datei${total>1?'en':''}</span>
-      </div>
-      <div class="lg-sub">
-        ${sizeTxt?`<span class="fix">${sizeTxt}</span>`:''}
-        <span class="fix ${p.crawling?'':''}" style="${p.crawling?'color:var(--amber)':''}">${esc(p.status)}</span>
-      </div>
-    </div>
-    <div class="lg-path">
-      ${I('folder','sm')}
-      <span class="p ellip" title="${esc(savePath)}">${esc(savePath)}</span>
-      <button class="btn mini" onclick="openDirModal('${id}','${esc(p.name)}','${esc(savePath)}')">${I('film','sm')}Ändern</button>
-    </div>
-    <div class="lg-ops">
-      ${offline}
-      <button class="btn tint" onclick="filterVideosInQueue('${id}','linkgrabber',event)">${I('video','sm')}Videos only</button>
-      <button class="btn ok" onclick="downloadSingleLinkgrabber('${id}')">${I('down','sm')}Download</button>
-      <button class="btn" onclick="togglePackageFiles('${id}','linkgrabber',event)">${I('files','sm')}Dateien (${total})</button>
-      <button class="btn danger" onclick="deletePackage('${id}','linkgrabber',event)">${I('trash','sm')}</button>
-    </div>
-    ${fileBlock}
-  </div>`;
+  return '<div class="lgp" data-gdl="'+(gdl?1:0)+'">'
+    +'<div class="lgp-top">'
+    +'<div class="lgp-title"><span class="lgp-name" title="'+esc(p.name)+'">'+esc(p.name)+'</span>'+toolBadge(p)+crawl+'<span class="chip files">'+total+' Datei'+(total>1?'en':'')+'</span></div>'
+    +'<div class="lgp-sub">'+(sizeTxt?'<span>'+sizeTxt+'</span>':'')+'<span'+((p.is_error)?' style="color:var(--red)"':'')+'>'+esc(p.status)+'</span></div>'
+    +'</div>'
+    +'<div class="lgp-path">'+icon('folder')+'<span class="p" title="'+esc(savePath)+'">'+esc(savePath)+'</span>'
+    +'<button class="tbtn" onclick="openDirModal(\''+id+'\',\''+esc(p.name)+'\',\''+esc(savePath)+'\')">'+icon('gear')+'Ändern</button></div>'
+    +'<div class="lgp-ops">'+offline
+    +'<button class="tbtn" onclick="filterVideosInQueue(\''+id+'\',\'linkgrabber\',event)">'+icon('film')+'Videos only</button>'
+    +'<button class="tbtn primary" onclick="downloadSingleLinkgrabber(\''+id+'\')">'+icon('circle-down')+'Download</button>'
+    +'<button class="tbtn" onclick="togglePackageFiles(\''+id+'\',\'linkgrabber\',event)">'+icon('folder-open')+'Dateien ('+total+')</button>'
+    +'<button class="tbtn danger" onclick="deletePackage(\''+id+'\',\'linkgrabber\',event)">'+icon('trash')+'</button>'
+    +'</div>'
+    +fileBlock
+    +'</div>';
 }
 
-/* ============================================================
-   RENDER — EMPTY STATES
-   ============================================================ */
+function emptyBox(msg){
+  return '<div class="empty">'+icon('cloud-moon')+'<div>'+esc(msg)+'</div></div>';
+}
 function emptyDownloads(){
   let m='Keine aktiven Downloads';
   if(State.mode==='all')m='Keine Pakete gefunden';
   if(State.only24h)m='Keine Pakete der letzten 24h';
   return emptyBox(m);
 }
-function emptyBox(msg){
-  return `<div style="padding:48px 12px;text-align:center;color:var(--text-faint)" class="small">
-    ${I('err','lg')}<div style="margin-top:8px">${esc(msg)}</div></div>`;
+
+/* ---------- In-place Live-Updates (kein Flickern) ---------- */
+function updateLiveRow(row,p){
+  // Fortschrittsbalken
+  const pct=Math.max(0,Math.min(100,p.percent||0));
+  const fill=row.querySelector('.pkg-bar .fill');
+  if(fill)fill.style.width=pct+'%';
+  // Bytes/Metadaten-Fußzeile in-place aktualisieren
+  const feet=row.querySelector('.pkg-feet');
+  if(feet){
+    const pctTxt=Number.isFinite(pct)?(Math.round(pct*10)/10):0;
+    const bytes=''+esc(p.bytes_loaded_formatted)+' <span style="opacity:.6">/ '+esc(p.bytes_total_formatted)+'</span> <span style="opacity:.5">('+pctTxt+'%)</span>';
+    let right='';
+    if(p.speed>0)right+='<span class="spd">'+icon('gauge-high')+esc(p.speed_formatted)+'</span>';
+    if(p.eta>0)right+='<span>ETA '+esc(p.eta_formatted)+'</span>';
+    feet.innerHTML='<span>'+bytes+'</span><span class="r">'+right+'</span>';
+  }
+}
+function updateLiveFiles(row,p){
+  // Dateiliste ist geöffnet: Zähler/Badges fallen unter die Struktur-Signatur,
+  // Datei-Fortschritt re-rendert nur via fetchPackageFiles bei echten Änderungen.
 }
 
 /* ============================================================
-   POLLING — idempotent (keine parallelen Requests)
+   POLLING — idempotent (busy-Guards)
    ============================================================ */
 async function pollStatus(){
   if(State.busy.status)return;
   State.busy.status=true;
   try{
-    const d=await fetch('/api/status').then(r=>r.json());
-    const dot=$('dot'),ct=$('connText');
+    const res=await fetch('/api/status');
+    const d=res.ok?await res.json():null;
+    const dot=$('pulse'),ct=$('connText');
     if(d&&d.connected){
-      dot.className='dot on';ct.textContent=d.state||'Verbunden';ct.style.color='var(--accent)';
-      $('speedChip').style.display='';
+      dot.className='pulse on';
+      ct.textContent=d.state||'Verbunden';
+      $('devName').textContent=d.device_name||'';
+      $('speedPill').classList.remove('hidden');
       $('speedText').textContent=d.speed_formatted||'0 B/s';
+      const st=$('statSpeed');st.textContent=d.speed_formatted||'0 B/s';
+      st.classList.toggle('pulse-live',!!(d.speed>0));
+      $('statSpeedSub').textContent=(d.downloading)?'wird geladen':'im Leerlauf';
+      $('statActiveSub').textContent=(d.downloading)?'läuft gerade':'pausiert/leer';
       if(d.disk){
-        $('diskChip').style.display='';
+        $('diskPill').classList.remove('hidden');
         $('diskFree').textContent=d.disk.free_formatted;
-        $('diskChip').title=`Frei: ${d.disk.free_formatted} | Gesamt: ${d.disk.total_formatted||''} | Belegt: ${d.disk.used_formatted||''} (${d.disk.percent_used||0}%)`;
-      } else { $('diskChip').style.display='none'; }
+        $('diskPill').title='Frei: '+d.disk.free_formatted+' | Gesamt: '+(d.disk.total_formatted||'')+' | Belegt: '+(d.disk.used_formatted||'')+' ('+(d.disk.percent_used||0)+'%)';
+        $('statDisk').textContent=d.disk.free_formatted;
+        $('statDiskSub').textContent=(d.disk.used_formatted||'--')+' belegt';
+      }else{$('diskPill').classList.add('hidden');$('statDisk').textContent='--';}
     }else{
-      dot.className='dot off';ct.textContent='Offline';ct.style.color='var(--amber)';
-      $('speedChip').style.display='none';
-      if(d&&d.disk){$('diskChip').style.display='';$('diskFree').textContent=d.disk.free_formatted;}
-      else{$('diskChip').style.display='none';}
-      // Pause-Button zurücksetzen, da Zustand unbekannt
+      dot.className='pulse off';
+      ct.textContent='Offline';
+      $('devName').textContent='';
+      $('speedPill').classList.add('hidden');
+      $('statSpeed').textContent='0 B/s';
+      $('statSpeedSub').textContent='keine Verbindung';
+      if(d&&d.disk){
+        $('diskPill').classList.remove('hidden');
+        $('diskFree').textContent=d.disk.free_formatted;
+        $('statDisk').textContent=d.disk.free_formatted;
+      }else{$('diskPill').classList.add('hidden');$('statDisk').textContent='--';}
       State.isPaused=false;renderPause();
     }
   }catch(e){}
@@ -813,38 +846,83 @@ async function pollDownloads(){
     let url='/api/downloads?mode='+State.mode;
     if(State.only24h)url+='&hours=24';
     const res=await fetch(url);
-    if(res.ok){
-      const d=await res.json();
-      const items=d.items||[];
-      $('dlBadge').textContent=items.length;
+    if(!res.ok)return;
+    const d=await res.json();
+    const items=d.items||[];
+    $('dlCount').textContent=items.length;
+    $('statActive').textContent=items.length;
+    syncSubNavCounts(items.length,$('lgCount').textContent||0);
+    const running=items.filter(x=>x.category==='running').length;
+    $('statActiveSub').textContent=running+' laufen · '+(items.length-running)+' sonst';
 
-      // Queue-Infos
-      const qb=$('queueBand');
-      if(d.queue_info&&d.queue_info.queue_remaining_bytes>0){
-        qb.style.display='';
-        $('qRemain').textContent=d.queue_info.queue_remaining_formatted;
-        const af=$('qAfter');
-        af.textContent=d.queue_info.after_download_free_formatted;
-        af.className='left '+(d.queue_info.sufficient_space?'ok':'bad');
-      }else{qb.style.display='none';}
+    const qb=$('queueBand');
+    if(d.queue_info&&d.queue_info.queue_remaining_bytes>0){
+      qb.classList.remove('hidden');
+      $('qRemain').textContent=d.queue_info.queue_remaining_formatted;
+      const af=$('qAfter');
+      af.textContent=d.queue_info.after_download_free_formatted;
+      af.className=d.queue_info.sufficient_space?'ok':'bad';
+      $('statQueue').textContent=d.queue_info.queue_remaining_formatted;
+      $('statQueueSub').textContent=d.queue_info.sufficient_space?'Platz ausreichend':'zu wenig Platz!';
+      // nur Zeichen, keine weights
+    }else{
+      qb.classList.add('hidden');
+      $('statQueue').textContent='0';
+      $('statQueueSub').textContent='Queue leer';
+    }
 
-      const list=$('downloadsList');
-      if(!items.length){list.innerHTML=emptyDownloads();}
-      else{
-        // Scrollposition & offene Dateiliste erhalten
-        const cur=list.scrollTop;
-        const openEl=State.openDlFiles?$('fc_'+State.openDlFiles):null;
-        const fs=openEl?openEl.scrollTop:0;
-        list.innerHTML=items.map(renderDownloadPackage).join('');
-        list.scrollTop=cur;
-        if(State.openDlFiles){
-          const rest=$('fc_'+State.openDlFiles);
-          if(rest&&fs>0)rest.scrollTop=fs;
-          const it=items.find(x=>String(x.uuid)===String(State.openDlFiles));
-          const src=(it&&it.source)?it.source:'downloads';
-          fetchPackageFiles(State.openDlFiles,src);
+    const list=$('downloadsList');
+    // ---- In-place Reconciliation statt komplettem Neu-Render ----
+    const rows=Array.from(list.querySelectorAll('.pkg'));
+    const byKey=new Map(rows.map(r=>[r.getAttribute('data-key'),r]));
+    const seen=new Set();
+    const madeChange=[false];
+
+    function renderPkg(p){
+      madeChange[0]=true;
+      const el=document.createElement('div');
+      el.innerHTML=renderDownloadPackage(p).trim();
+      const node=el.firstChild;
+      if(State.expandedPkg===p.uuid)node.classList.add('is-open');
+      return node;
+    }
+
+    for(const p of items){
+      seen.add(String(p.uuid));
+      const key=String(p.uuid);
+      const row=byKey.get(key);
+      if(!row){
+        list.appendChild(renderPkg(p));
+        continue;
+      }
+      // stable Signature: Name + Kategorie + Status-Set entscheiden "Struktur-Aenderung"
+      const sig=[p.name, p.category, p.is_error?'err':'', p.source||''].join('|');
+      const curSig=row.getAttribute('data-sig');
+      const open=State.expandedPkg===p.uuid;
+      const filesOpen=State.openDlFiles===p.uuid;
+      if(sig!==curSig || (open&&!row.classList.contains('is-open')) || (filesOpen&&!row.querySelector('.files'))){
+        // strukturelle Änderung => neu rendern dieser Zeile
+        const curScrollHasFiles=row.querySelector('.files');
+        const nb=renderPkg(p);
+        // Expand/Zustand bewahren
+        if(open)nb.classList.add('is-open');
+        row.parentNode.replaceChild(nb,row);
+      }else{
+        // nur Live-Zahlen in-place aktualisieren
+        updateLiveRow(row,p);
+        if(open && filesOpen){
+          // Dateiliste aktiv offen: Progress der Dateien in place
+          updateLiveFiles(row,p);
         }
       }
+    }
+    // entfernte Pakete löschen
+    for(const row of rows){
+      if(!seen.has(row.getAttribute('data-key'))){row.remove();madeChange[0]=true;}
+    }
+    // Leere Liste korrekt anzeigen (auch initial)
+    if(!items.length && list.children.length===0){
+      list.innerHTML=emptyDownloads();
     }
   }catch(e){}
   finally{State.busy.dl=false;setTimeout(pollDownloads,3500);}
@@ -855,25 +933,24 @@ async function pollLinkgrabber(){
   State.busy.lg=true;
   try{
     const res=await fetch('/api/linkgrabber');
-    if(res.ok){
-      const d=await res.json();
-      const items=d.items||[];
-      $('lgBadge').textContent=items.length;
-      const list=$('linkgrabberList');
-      if(!items.length){list.innerHTML=emptyBox('Grabber ist leer');}
-      else{
-        const cur=list.scrollTop;
-        const openEl=$('fc_'+State.openLgFiles);
-        const fs=openEl?openEl.scrollTop:0;
-        list.innerHTML=items.map(renderLinkgrabberPackage).join('');
-        list.scrollTop=cur;
-        if(State.openLgFiles){
-          const rest=$('fc_'+State.openLgFiles);
-          if(rest&&fs>0)rest.scrollTop=fs;
-          fetchPackageFiles(State.openLgFiles,'linkgrabber');
-        }
-      }
+    if(!res.ok)return;
+    const d=await res.json();
+    const items=d.items||[];
+    $('lgCount').textContent=items.length;
+    syncSubNavCounts($('dlCount').textContent||0,items.length);
+    // Merken: crawling-Flag nur bei gdl übertragen
+    const tm={};
+    items.forEach(x=>{tm[x.uuid]={crawling:!!x.crawling};});
+    State.lastLg=tm;
+    const list=$('linkgrabberList');
+    const html=items.length?items.map(renderLinkgrabberPackage).join(''):emptyBox('Grabber ist leer');
+    // Nur neu rendern, wenn Inhalt sich wirklich ändert
+    if(list.innerHTML!==html){
+      const cur=list.scrollTop;
+      list.innerHTML=html;
+      list.scrollTop=cur;
     }
+    if(State.openLgFiles)setTimeout(()=>fetchPackageFiles(State.openLgFiles,'linkgrabber'),30);
   }catch(e){}
   finally{State.busy.lg=false;setTimeout(pollLinkgrabber,3500);}
 }
@@ -881,16 +958,6 @@ async function pollLinkgrabber(){
 /* ============================================================
    AKTIONEN
    ============================================================ */
-function switchTab(tab){
-  State.tab=tab;
-  ['downloads','linkgrabber','add'].forEach(t=>{
-    $('panel'+cap(t)).classList.toggle('on',t===tab);
-    $('tab'+cap(t)).classList.toggle('active',t===tab);
-  });
-  if(tab==='downloads')pollDownloads();
-  if(tab==='linkgrabber')pollLinkgrabber();
-}
-function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 function setMode(m){
   State.mode=m;
   $('modeActive').classList.toggle('on',m==='active');
@@ -901,9 +968,21 @@ function toggle24h(){
   State.only24h=!State.only24h;
   const b=$('btn24h');
   b.classList.toggle('on',State.only24h);
-  b.classList.toggle('tint',State.only24h);
-  $('dot24').style.background=State.only24h?'var(--accent)':'var(--text-faint)';
   pollDownloads();
+}
+/* ---------- Submenu navigation ---------- */
+function showSection(id,btn){
+  if(btn&&!btn.classList.contains('on')){
+    document.querySelectorAll('.subnav-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+  }
+  document.querySelectorAll('.sec').forEach(s=>{
+    s.dataset.active = (s.id===id)?'1':'0';
+  });
+}
+function syncSubNavCounts(dlCount,lgCount){
+  const d=$('subDlCount');if(d)d.textContent=dlCount;
+  const l=$('subLgCount');if(l)l.textContent=lgCount;
 }
 function togglePackageActions(id,e){
   if(e)e.stopPropagation();
@@ -922,21 +1001,25 @@ function togglePackageFiles(id,source,e){
   }else{
     State.openLgFiles=(State.openLgFiles===id)?null:id;
     pollLinkgrabber();
-    if(State.openLgFiles)setTimeout(()=>fetchPackageFiles(State.openLgFiles,'linkgrabber'),50);
+    if(State.openLgFiles)setTimeout(()=>fetchPackageFiles(State.openLgFiles,'linkgrabber'),40);
   }
 }
 async function fetchPackageFiles(id,source){
   try{
     const res=await fetch('/api/downloads/files?package_uuid='+encodeURIComponent(id)+'&source='+encodeURIComponent(source));
-    if(res.ok){
-      const d=await res.json();
-      State.filesCache[id]=d.files||[];
-      const open = (source==='gallery-dl'||source==='downloads') ? (State.openDlFiles===id) : (State.openLgFiles===id);
-      if(open){
-        const el=$('fc_'+id);
-        if(el){
+    if(!res.ok)return;
+    const d=await res.json();
+    State.filesCache[id]=d.files||[];
+    const open=(source==='downloads'||source==='gallery-dl')?(State.openDlFiles===id):(State.openLgFiles===id);
+    if(open){
+      const el=$('fc_'+id);
+      if(el){
+        let html=(d.files||[]).length?d.files.map(renderFileItem).join(''):'<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien.</div>';
+        // In-place: nur neu bauen, wenn sich Inhalt wirklich ändert (kein Springen beim Aufklappen)
+        if(el.getAttribute('data-files-sig')!==html){
           const top=el.scrollTop;
-          el.innerHTML=(d.files||[]).length?d.files.map(renderFileItem).join(''):'<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-faint)">Keine Dateien.</div>';
+          el.innerHTML=html;
+          el.setAttribute('data-files-sig',html);
           el.scrollTop=top;
         }
       }
@@ -946,22 +1029,28 @@ async function fetchPackageFiles(id,source){
 
 async function prioritizePackage(id,e){
   if(e)e.stopPropagation();
-  toast('Aktualisiere Priorität…');
+  toast('Prüfe Priorität…');
   const {ok,d}=await post('/api/downloads/prioritize',{package_uuid:id,source:'downloads'});
   if(ok&&d.success){toast(d.message||'Priorität aktualisiert');pollDownloads();}
-  else toast('Prioritätsfehler',true);
+  else toast('Prioritätsfehler'+(d.detail?' : '+d.detail:''),true);
 }
 async function movePackage(id,direction,e){
   if(e)e.stopPropagation();
   const {ok,d}=await post('/api/downloads/move',{package_uuid:id,direction:direction});
   if(ok&&d.success){toast(direction==='up'?'Nach oben':'Nach unten');pollDownloads();}
-  else toast('Verschleben fehlgeschlagen',true);
+  else toast('Verschieben fehlgeschlagen'+(d.detail?' : '+d.detail:''),true);
 }
 async function retryDownload(id,e){
   if(e)e.stopPropagation();
   const {ok,d}=await post('/api/downloads/retry',{package_uuid:id,source:'gallery-dl'});
   if(ok&&d.success){toast(d.message);pollDownloads();}
   else toast('Fehler: '+(d.detail||d.message||'unbekannt'),true);
+}
+/* JD has no /retry — the task lists retry only for gallery-dl. For JD errors we surface the status text.
+   Keeping a no-op alert to stay explicit that JD retry is unsupported via API. */
+function retryDownloadJD(id,e){
+  if(e)e.stopPropagation();
+  toast('Kein JD-Retry-API — Paket per "Priorität" neu anstossen oder patchen.',true);
 }
 async function deletePackage(id,source,e){
   if(e)e.stopPropagation();
@@ -972,7 +1061,7 @@ async function deletePackage(id,source,e){
     State.expandedPkg=null;
     if(source==='linkgrabber'){State.openLgFiles=null;pollLinkgrabber();}
     else{State.openDlFiles=null;pollDownloads();}
-  }else toast('Löschen fehlgeschlagen',true);
+  }else toast('Löschen fehlgeschlagen'+(d.detail?' : '+d.detail:''),true);
 }
 async function downloadSingleLinkgrabber(id){
   const chk=$('off_'+id);
@@ -992,11 +1081,11 @@ async function filterVideosInQueue(id,source,e){
   if(!openConfirm('Alle Nicht-Video-Dateien (Bilder, Text, …) aus '+t+' entfernen?'))return;
   toast('Filtere Nicht-Videos…');
   const {ok,d}=await post('/api/filter-videos',{package_uuid:id,source:source});
-  if(ok&&d.success){toast(d.message||'Fertig');if(source==='downloads')pollDownloads();else pollLinkgrabber();}
+  if(ok&&d.success){toast(d.message||'Fertig');if(source==='downloads'||source==='gallery-dl')pollDownloads();else pollLinkgrabber();}
   else toast('Filterfehler: '+(d.detail||d.message||''),true);
 }
 
-/* ---- DirModal ---- */
+/* ---------- DirModal ---------- */
 function openDirModal(id,name,path){
   State.dirTarget=id;
   $('dirPkg').textContent=name||'';
@@ -1004,7 +1093,7 @@ function openDirModal(id,name,path){
   const inp=$('dirInput');
   inp.value=path||'/output';
   const chips=$('dirFolderChips');
-  chips.innerHTML=State.folders.map(f=>`<button class="folder-chip" onclick="$('dirInput').value='${esc(f)}'">${esc(f)}</button>`).join('');
+  chips.innerHTML=State.folders.map(f=>'<button class="folder-chip" onclick="$(\'dirInput\').value=\''+esc(f)+'\'">'+esc(f)+'</button>').join('');
   $('dirOverlay').classList.add('on');
   setTimeout(()=>{inp.focus();inp.select();},60);
 }
@@ -1014,19 +1103,28 @@ async function saveDirModal(){
   if(!id)return;
   const directory=$('dirInput').value.trim();
   if(!directory){toast('Pfad darf nicht leer sein',true);return;}
-  const {ok,d}=await post('/api/linkgrabber/set-directory',{package_uuid:Number(id),directory:directory});
+  const {ok,d}=await post('/api/linkgrabber/set-directory',{package_uuid:id,directory:directory});
   if(ok&&d.success){toast(d.message||'Pfad gespeichert');closeDirModal();pollLinkgrabber();}
   else toast('Fehler: '+(d.detail||d.message||''),true);
 }
 
-/* ---- Add Links ---- */
+/* ---------- Add Links ---------- */
 async function loadFolders(){
   try{
-    const d=await fetch('/api/folders').then(r=>r.json());
+    const res=await fetch('/api/folders');
+    const d=res.ok?await res.json():{};
     State.folders=(d&&d.folders)||[];
-    $('folderSuggestions').innerHTML=State.folders.map(f=>`<option value="${esc(f)}"></option>`).join('');
+    $('folderSuggestions').innerHTML=State.folders.map(f=>'<option value="'+esc(f)+'"></option>').join('');
+    // Chips im Add-Bereich
+    $('addFolderChips').innerHTML=State.folders.map(f=>'<button class="folder-chip" onclick="setAddFolder(\''+esc(f)+'\')">'+esc(f)+'</button>').join('');
+    // Dir-Modal Chips (falls offen)
+    const dch=$('dirFolderChips');
+    if(State.dirTarget){
+      dch.innerHTML=State.folders.map(f=>'<button class="folder-chip" onclick="$(\'dirInput\').value=\''+esc(f)+'\'">'+esc(f)+'</button>').join('');
+    }
   }catch(e){}
 }
+function setAddFolder(f){const inp=$('addDestinationFolder');inp.value=f;toast('Ordner: '+f);}
 async function promptCreateFolder(targetId){
   const name=window.prompt('Neuen Ordnernamen eingeben (wird unter /output angelegt):');
   if(!name||!name.trim())return;
@@ -1050,26 +1148,30 @@ async function submitLinks(){
   if(destinationFolder)payload.destination_folder=destinationFolder;
   const {ok,d}=await post('/api/links',payload);
   if(ok&&d.success){
-    showFeedback(fb,'✓ '+d.message,false);
+    showFeedback(fb,'Erfolg: '+(d.message||'Links hinzugefügt'),false);
     ta.value='';destInp.value='';
-    setTimeout(()=>switchTab(autostart?'downloads':'linkgrabber'),800);
+    setTimeout(()=>{if(autostart){pollDownloads();}else{pollLinkgrabber();}},600);
   }else showFeedback(fb,'Fehler: '+(d.detail||'Unbekannter Fehler'),true);
 }
 function showFeedback(el,text,isErr){
   el.textContent=text;
-  el.className='feedback '+(isErr?'err':'ok');
+  el.className='feedback show '+(isErr?'err':'ok');
   clearTimeout(el._h);
   el._h=setTimeout(()=>{el.className='feedback';},5000);
 }
 
-/* ---- Pause / Resume ---- */
+/* ---------- Pause / Resume ---------- */
 function renderPause(){
   const btn=$('pauseBtn'),icon=$('pauseIcon'),lbl=$('pauseLbl');
-  btn.classList.toggle('highlight',State.isPaused);
-  icon.innerHTML=State.isPaused
-    ? '<path d="M8 5v14l11-7z"/>'
-    : '<path d="M8 5v14M16 5v14"/>';
-  lbl.textContent=State.isPaused?'Weiter':'Pause';
+  if(State.isPaused){
+    btn.classList.add('resume');
+    icon.className='fa-solid fa-play';
+    lbl.textContent='Weiter';
+  }else{
+    btn.classList.remove('resume');
+    icon.className='fa-solid fa-pause';
+    lbl.textContent='Pause';
+  }
 }
 async function togglePause(){
   const action=State.isPaused?'resume':'pause';
@@ -1086,6 +1188,8 @@ loadFolders();
 pollStatus();
 pollDownloads();
 pollLinkgrabber();
+// Init: nur Downloads-Sektion sichtbar machen
+showSection('secDownloads');
 </script>
 </body>
 </html>
