@@ -925,8 +925,9 @@ async function pollDownloads(){
         madeChange[0]=true;
         continue;
       }
-      // Struktur geändert (Name/Kategorie/Status/Source) => Zeile neu bauen
-      if(sig!==curSig || (open&&!row.classList.contains('is-open'))){
+      // Struktur geändert ODER Auf-/Zuklapp-Zustand weicht von der DOM-is-open ab
+      // => Zeile neu bauen (deckt auch Zuklappen ab: Rendered ohne offene Aktionen)
+      if(sig!==curSig || row.classList.contains('is-open')!==open || (open&&!row.classList.contains('is-open'))){
         const nb=renderPkg(p);
         if(open)nb.classList.add('is-open');
         row.parentNode.replaceChild(nb,row);
