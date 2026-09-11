@@ -1012,16 +1012,23 @@ function togglePackageActions(id,e){
   const closing=(State.expandedPkg===id);
   State.expandedPkg=closing?null:id;
   if(closing){
-    // Chevron/Header erneut geklickt => auch Dateiliste und Linkgrabber-Liste schließen
+    // Chevron/Header erneut geklickt => Aktionen UND Dateiliste komplett schließen
     State.openDlFiles=null; State.openLgFiles=null;
-    // synchron entfernen (busy-safe)
+    // Download-Zeile komplett neu rendern (ohne Actions, ohne is-open)
     const row=document.querySelector('#downloadsList .pkg[data-key="'+id+'"]');
-    if(row){ const fb=row.querySelector('#fc_'+id)?.closest('.files'); if(fb)fb.remove(); }
+    if(row){
+      const dl=State.downloads.find(x=>x.uuid===id);
+      if(dl){ const nb=renderDownloadPackage(dl); row.parentNode.replaceChild(nb,row); }
+    }
+    // Linkgrabber-Zeile komplett neu rendern
     const lrow=document.querySelector('#linkgrabberList .lgp[data-key="'+id+'"]');
-    if(lrow){ const fb=lrow.querySelector('#fc_'+id)?.closest('.files'); if(fb)fb.remove(); }
+    if(lrow){
+      const lg=State.linkgrabber.find(x=>x.uuid===id);
+      if(lg){ const nb=renderLinkgrabberPackage(lg); lrow.parentNode.replaceChild(nb,lrow); }
+    }
+    // Sonstige UI sofort aktualisieren
+    pollDownloads(); pollLinkgrabber();
   }
-  pollDownloads();
-  if(closing) pollLinkgrabber();
 }
 function togglePackageFiles(id,source,e){
   if(e)e.stopPropagation();
@@ -1037,7 +1044,7 @@ function togglePackageFiles(id,source,e){
       const fb=row&&row.querySelector('#fc_'+id)?.closest('.files');
       if(fb)fb.remove();
       // Button-Label sofort zurück auf "Dateien anzeigen (N)"
-      if(row){ const b=[...row.querySelectorAll('button')].find(x=>x.textContent.includes('Dateien ausblenden')); if(b){const total=(State.filesCache[id]||[]).length;b.textContent=icon('folder-open')+'Dateien anzeigen ('+total+')';} }
+      if(row){ const b=[...row.querySelectorAll('button')].find(x=>x.textContent.includes('Dateien ausblenden')); if(b){const total=(State.filesCache[id]||[]).length;b.innerHTML=icon('folder-open')+'Dateien anzeigen ('+total+')';} }
       pollDownloads();
     }
   }else{
