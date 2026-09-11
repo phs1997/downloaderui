@@ -752,7 +752,7 @@ function renderLinkgrabberPackage(p){
     :'<span class="chip gdl" style="height:34px">'+icon('camera')+'gallery-dl</span>';
   const fileBlock=filesOpen?filesBlock(p.uuid,'lg'):'';
 
-  return '<div class="lgp" data-gdl="'+(gdl?1:0)+'">'
+  return '<div class="lgp" data-key="'+esc(p.uuid)+'" data-gdl="'+(gdl?1:0)+'">'
     +'<div class="lgp-top">'
     +'<div class="lgp-title"><span class="lgp-name" title="'+esc(p.name)+'">'+esc(p.name)+'</span>'+toolBadge(p)+crawl+'<span class="chip files">'+total+' Datei'+(total>1?'en':'')+'</span></div>'
     +'<div class="lgp-sub">'+(sizeTxt?'<span>'+sizeTxt+'</span>':'')+'<span class="estxt"'+((p.is_error)?' style="color:var(--red)"':'')+'>'+esc(p.status)+'</span></div>'
@@ -907,25 +907,33 @@ async function pollDownloads(){
       const curSig=row.getAttribute('data-sig');
       const open=State.expandedPkg===p.uuid;
       const filesOpen=State.openDlFiles===p.uuid;
-      // Neu rendern, wenn sich die Struktur ändert ODER der Expand/Dateilisten-Zustand
-      // nicht zum aktuellen Paket passt (z.B. Dateien-Button gerade geöffnet wurde).
       // WICHTIG: Prüfe auf das EINDEUTIGE Dateilisten-Block (fc_<id>), nicht das generische
       // `.files` (das kann auch andere UI-Elemente mit dieser Klasse treffen – fake positif).
       const hasFilesBlock = row.querySelector('#fc_'+p.uuid)?1:0;
       const wantFiles = (filesOpen && p.files_total)?1:0;
-      if(sig!==curSig || (open&&!row.classList.contains('is-open')) ||
-         (filesOpen&&!hasFilesBlock) || (wantFiles!==hasFilesBlock&&wantFiles)){
-        // strukturelle Änderung => neu rendern dieser Zeile
-        const curScrollHasFiles=row.querySelector('.files');
+      const isGdl = (p.source==='gallery-dl'||String(p.uuid).startsWith('gdl_'));
+      // Dateilisten-Block gezielt EIN-/AUSBLENDEN UND den Button-Label korrekt halten:
+      // wir rendern die Zeile einmal neu (nicht den Datei-Inhalt, der bleibt gecacht),
+      // damit "Dateien anzeigen/ausblenden" den richtigen Zustand zeigt.
+      if(wantFiles!==hasFilesBlock){
+        const fileSrc=isGdl?'gallery-dl':'downloads';
+        // Zeile neu bauen mit aktuellem Zustand => Button-Label + Dateiblock konsistent
         const nb=renderPkg(p);
-        // Expand/Zustand bewahren
+        if(open)nb.classList.add('is-open');
+        row.parentNode.replaceChild(nb,row);
+        if(wantFiles) fetchPackageFiles(p.uuid,fileSrc);
+        madeChange[0]=true;
+        continue;
+      }
+      // Struktur geändert (Name/Kategorie/Status/Source) => Zeile neu bauen
+      if(sig!==curSig || (open&&!row.classList.contains('is-open'))){
+        const nb=renderPkg(p);
         if(open)nb.classList.add('is-open');
         row.parentNode.replaceChild(nb,row);
       }else{
         // nur Live-Zahlen in-place aktualisieren
         updateLiveRow(row,p);
         if(open && filesOpen){
-          // Dateiliste aktiv offen: Progress der Dateien in place
           updateLiveFiles(row,p);
         }
       }
@@ -1000,22 +1008,41 @@ function syncSubNavCounts(dlCount,lgCount){
 }
 function togglePackageActions(id,e){
   if(e)e.stopPropagation();
-  State.expandedPkg=(State.expandedPkg===id)?null:id;
+  const closing=(State.expandedPkg===id);
+  State.expandedPkg=closing?null:id;
+  if(closing){
+    // Chevron/Header erneut geklickt => auch Dateiliste und Linkgrabber-Liste schließen
+    State.openDlFiles=null; State.openLgFiles=null;
+    // synchron entfernen (busy-safe)
+    const row=document.querySelector('#downloadsList .pkg[data-key="'+id+'"]');
+    if(row){ const fb=row.querySelector('#fc_'+id)?.closest('.files'); if(fb)fb.remove(); }
+    const lrow=document.querySelector('#linkgrabberList .lgp[data-key="'+id+'"]');
+    if(lrow){ const fb=lrow.querySelector('#fc_'+id)?.closest('.files'); if(fb)fb.remove(); }
+  }
   pollDownloads();
+  if(closing) pollLinkgrabber();
 }
 function togglePackageFiles(id,source,e){
   if(e)e.stopPropagation();
   if(source==='downloads'){
     State.openDlFiles=(State.openDlFiles===id)?null:id;
-    pollDownloads();
     if(State.openDlFiles){
+      pollDownloads();
       const src=String(id).startsWith('gdl_')?'gallery-dl':'downloads';
       fetchPackageFiles(State.openDlFiles,src);
+    }else{
+      // direkt + synchron das Dateilisten-Block entfernen (unabhängig von poll-Race)
+      const row=document.querySelector('#downloadsList .pkg[data-key="'+id+'"]');
+      const fb=row&&row.querySelector('#fc_'+id)?.closest('.files');
+      if(fb)fb.remove();
+      // Button-Label sofort zurück auf "Dateien anzeigen (N)"
+      if(row){ const b=[...row.querySelectorAll('button')].find(x=>x.textContent.includes('Dateien ausblenden')); if(b){const total=(State.filesCache[id]||[]).length;b.textContent=icon('folder-open')+'Dateien anzeigen ('+total+')';} }
+      pollDownloads();
     }
   }else{
     State.openLgFiles=(State.openLgFiles===id)?null:id;
-    pollLinkgrabber();
     if(State.openLgFiles)setTimeout(()=>fetchPackageFiles(State.openLgFiles,'linkgrabber'),40);
+    pollLinkgrabber();
   }
 }
 function renderFilesInto(el, files){
